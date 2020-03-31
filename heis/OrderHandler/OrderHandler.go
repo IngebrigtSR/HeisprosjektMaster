@@ -1,4 +1,4 @@
-package main
+package orderhandler
 
 import (
 	"fmt"
@@ -8,16 +8,7 @@ import (
 	"../elevio"
 )
 
-// type State int
-
-// const (
-// 	DEAD     State = 0
-// 	INIT           = 1
-// 	IDLE           = 2
-// 	MOVING         = 3
-// 	DOOROPEN       = 4
-// )
-
+//Elevator struct
 type Elevator struct {
 	Dir    elevio.MotorDirection
 	Floor  int
@@ -25,6 +16,7 @@ type Elevator struct {
 	Orders [NumFloors][NumButtons]bool
 }
 
+//ElevLog array of all system elevators
 type ElevLog [NumElevators]Elevator
 
 func ordersAbove(elev Elevator) bool {
@@ -142,7 +134,7 @@ func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 	cheapestCost := 10000
 	for elev := 0; elev < NumElevators; elev++ {
 		cost := getCost(order, log[elev])
-		if cost < cheapestCost {
+		if cost < cheapestCost && log[elev].State != DEAD {
 			cheapestElev = elev
 			cheapestCost = cost
 		}
@@ -150,28 +142,56 @@ func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 	return cheapestElev
 }
 
-func testCostFunction() {
-	var elev Elevator
-	elev.Dir = elevio.MD_Down
-	elev.Floor = 1
+func assignOrder(order elevio.ButtonEvent, log ElevLog) {
+	cheapestElev := getCheapestElev(order, log)
 
-	var orders [NumFloors][NumButtons]bool
+	log[cheapestElev].Orders[order.Floor][order.Button] = true
+}
 
-	for i := 0; i < NumFloors; i++ {
-		for j := 0; j < NumButtons; j++ {
-			orders[i][j] = false
+func reAssignOrders(log ElevLog, deadElev int) {
+	if log[deadElev].State != DEAD {
+		log[deadElev].State = DEAD
+	}
+	for f := 0; f < NumFloors; f++ {
+		for b := 0; b < NumButtons; b++ {
+			if log[deadElev].Orders[f][b] == true {
+				order := elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
+				assignOrder(order, log)
+			}
 		}
 	}
-	orders[2][2] = true
-	//orders[1][2] = true
+}
 
-	elev.Orders = orders
+func makeEmptyLog() ElevLog {
+	var log [NumElevators]Elevator
+
+	for elev := 0; elev < NumElevators; elev++ {
+		log[elev].Dir = elevio.MD_Stop
+		log[elev].Floor = 0
+		log[elev].State = IDLE
+
+		for i := 0; i < NumFloors; i++ {
+			for j := 0; j < NumButtons; j++ {
+				log[elev].Orders[i][j] = false
+			}
+		}
+
+	}
+	return log
+}
+
+func testCostFunction() {
+	ElevLog := makeEmptyLog()
+	elev := ElevLog[0]
+
+	elev.Dir = elevio.MD_Down
+	elev.Floor = 1
 	elev.State = MOVING
 
-	var testOrder elevio.ButtonEvent
+	elev.Orders[2][2] = true
+	elev.Orders[0][2] = true
 
-	testOrder.Floor = 3
-	testOrder.Button = elevio.BT_HallUp
+	testOrder := elevio.ButtonEvent{Floor: 3, Button: elevio.BT_HallUp}
 
 	cost := getCost(testOrder, elev)
 
@@ -179,6 +199,6 @@ func testCostFunction() {
 
 }
 
-func main() {
-	testCostFunction()
-}
+// func main() {
+// 	testCostFunction()
+// }
