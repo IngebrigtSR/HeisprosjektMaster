@@ -1,25 +1,22 @@
-package orderhandler
+package main
 
 import (
 	"fmt"
 	"math"
 
+	. "../config"
 	"../elevio"
 )
 
-const NumFloors = 4
-const NumButtons = 3
-const NumElevators = 3
+// type State int
 
-type State int
-
-const (
-	DEAD     State = 0
-	INIT           = 1
-	IDLE           = 2
-	MOVING         = 3
-	DOOROPEN       = 4
-)
+// const (
+// 	DEAD     State = 0
+// 	INIT           = 1
+// 	IDLE           = 2
+// 	MOVING         = 3
+// 	DOOROPEN       = 4
+// )
 
 type Elevator struct {
 	Dir    elevio.MotorDirection
@@ -97,7 +94,6 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 				return cost
 			} else if ordersOnFloor(elev.Floor, elev) {
 				cost += 2
-				println("checked")
 			} else {
 				cost++
 			}
@@ -122,10 +118,8 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 				return cost
 			} else if ordersOnFloor(elev.Floor, elev) {
 				cost += 2
-				println("stopped")
 			} else {
 				cost++
-				println("passed")
 			}
 
 			if !ordersInFront(elev) {
@@ -185,6 +179,6 @@ func testCostFunction() {
 
 }
 
-// func main() {
-// 	testCostFunction()
-// }
+func main() {
+	testCostFunction()
+}
