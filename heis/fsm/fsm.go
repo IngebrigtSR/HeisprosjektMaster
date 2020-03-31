@@ -132,15 +132,8 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int) {
 	var elev Elevator
 	initFSM()
 
-	// drv_buttons := make(chan elevio.ButtonEvent)
-	// drv_floors := make(chan int)
-	// drv_obstr := make(chan bool)
-	// drv_stop := make(chan bool)
-
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
-	// go elevio.PollObstructionSwitch(drv_obstr)
-	// go elevio.PollStopButton(drv_stop)
 
 	for {
 		select {
@@ -164,21 +157,6 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int) {
 			elev.dir = setDir(floor, int(elev.dir))
 			elevio.SetMotorDirection(elev.dir)
 
-			// case a := <-drv_obstr:
-			// 	fmt.Printf("%+v\n", a)
-			// 	if a {
-			// 		elevio.SetMotorDirection(elevio.MD_Stop)
-			// 	} else {
-			// 		elevio.SetMotorDirection(elev.dir)
-			// 	}
-
-			// case a := <-drv_stop:
-			// 	fmt.Printf("%+v\n", a)
-			// 	for f := 0; f < numFloors; f++ {
-			// 		for b := elevio.ButtonType(0); b < 3; b++ {
-			// 			elevio.SetButtonLamp(b, f, false)
-			// 		}
-			// 	}
 		}
 	}
 }

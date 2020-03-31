@@ -41,7 +41,8 @@ func ordersBelow(elev Elevator) bool {
 	return false
 }
 
-func ordersInFront(elev Elevator) bool {
+//OrdersInFront checks for any active orders in the direction of travel for a given elevator
+func OrdersInFront(elev Elevator) bool {
 	switch dir := elev.Dir; dir {
 	case elevio.MD_Stop:
 		return false
@@ -53,6 +54,7 @@ func ordersInFront(elev Elevator) bool {
 	return false
 }
 
+//Does not take direction into account, only used for cost function
 func ordersOnFloor(floor int, elev Elevator) bool {
 	for b := 0; b < NumButtons; b++ {
 		if elev.Orders[floor][b] {
@@ -90,7 +92,7 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 				cost++
 			}
 
-			if !ordersInFront(elev) {
+			if !OrdersInFront(elev) {
 				break
 			}
 
@@ -114,7 +116,7 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 				cost++
 			}
 
-			if !ordersInFront(elev) {
+			if !OrdersInFront(elev) {
 				break
 			}
 
@@ -142,24 +144,53 @@ func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 	return cheapestElev
 }
 
-func assignOrder(order elevio.ButtonEvent, log ElevLog) {
+//AssignOrder assigns a given order to the "best" elevator
+func AssignOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
 	cheapestElev := getCheapestElev(order, log)
 
 	log[cheapestElev].Orders[order.Floor][order.Button] = true
+	return log
 }
 
-func reAssignOrders(log ElevLog, deadElev int) {
-	if log[deadElev].State != DEAD {
-		log[deadElev].State = DEAD
-	}
-	for f := 0; f < NumFloors; f++ {
-		for b := 0; b < NumButtons; b++ {
-			if log[deadElev].Orders[f][b] == true {
-				order := elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
-				assignOrder(order, log)
+//ReAssignOrders reassigns dead elevator orders to other elevators
+func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
+	if log[deadElev].State == DEAD {
+		for f := 0; f < NumFloors; f++ {
+			for b := 0; b < NumButtons; b++ {
+				if log[deadElev].Orders[f][b] == true {
+					order := elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
+					AssignOrder(order, log)
+				}
 			}
 		}
 	}
+	return log
+}
+
+//ClearOrdersFloor clears all orders on a given floor for a given elevator
+func ClearOrdersFloor(floor int, elevID int, log ElevLog) ElevLog {
+	elev := log[elevID]
+
+	if floor == elev.Floor {
+		switch S := elev.State; S {
+		case IDLE:
+			for b := 0; b < NumButtons; b++ {
+				elev.Orders[floor][b] = false
+			}
+		case MOVING:
+			if elev.Orders[floor][elevio.BT_Cab] {
+				elev.Orders[floor][elevio.BT_Cab] = false
+			}
+			if elev.Orders[floor][elevio.BT_HallUp] && elev.Dir == elevio.MD_Up {
+				elev.Orders[floor][elevio.BT_HallUp] = false
+			}
+			if elev.Orders[floor][elevio.BT_HallDown] && elev.Dir == elevio.MD_Down {
+				elev.Orders[floor][elevio.BT_HallDown] = false
+			}
+		}
+	}
+	log[elevID] = elev
+	return log
 }
 
 func makeEmptyLog() ElevLog {
@@ -167,8 +198,8 @@ func makeEmptyLog() ElevLog {
 
 	for elev := 0; elev < NumElevators; elev++ {
 		log[elev].Dir = elevio.MD_Stop
-		log[elev].Floor = 0
-		log[elev].State = IDLE
+		log[elev].Floor = -1
+		log[elev].State = DEAD
 
 		for i := 0; i < NumFloors; i++ {
 			for j := 0; j < NumButtons; j++ {
