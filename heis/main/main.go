@@ -14,8 +14,12 @@ func main() {
 
 	// drv_buttons := make(chan elevio.ButtonEvent)
 	// drv_floors := make(chan int)
+	// startUp := make(chan bool)
 
-	// go fsm.ElevFSM(drv_buttons, drv_floors)
+	// go elevio.PollButtons(drv_buttons)
+	// go elevio.PollFloorSensor(drv_floors)
+
+	// go fsm.ElevFSM(drv_buttons, drv_floors, startUp)
 
 	log := orderhandler.MakeEmptyLog()
 	orderhandler.TestCost(log)
