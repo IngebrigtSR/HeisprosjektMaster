@@ -3,27 +3,19 @@ package fsm
 import (
 	"fmt"
 
-	. "../config"
 	"../elevio"
 	"../orderhandler"
 )
 
-// const numFloors int = 4
-// const NumButtons int = 3
+const numFloors int = 4
+const numButtons int = 3
 
-var activeOrders [NumFloors][NumButtons]bool
-
-type Elevator struct {
-	floor  int
-	dir    elevio.MotorDirection
-	state  int
-	orders [NumFloors][NumButtons]bool
-}
+var activeOrders [numFloors][numButtons]bool
 
 func printOrder() {
 	fmt.Printf("Active Orders: \n")
-	for f := 0; f < NumFloors; f++ {
-		for b := 0; b < NumButtons; b++ {
+	for f := 0; f < numFloors; f++ {
+		for b := 0; b < numButtons; b++ {
 			if activeOrders[f][b] {
 				fmt.Printf("%d\t", 1)
 
@@ -35,44 +27,31 @@ func printOrder() {
 	}
 }
 
-func shouldStop(floor int, dir elevio.MotorDirection) bool {
-	if floor == 0 || floor == NumFloors-1 {
+func shouldStop(elev orderhandler.Elevator) bool {
+	if elev.Floor == 0 || elev.Floor == numFloors-1 {
 		return true
 	}
-	if activeOrders[floor][elevio.BT_HallUp] && dir == elevio.MD_Up {
+	if activeOrders[elev.Floor][elevio.BT_HallUp] && elev.Dir == elevio.MD_Up {
 		return true
 	}
-	if activeOrders[floor][elevio.BT_HallDown] && dir == elevio.MD_Down {
+	if activeOrders[elev.Floor][elevio.BT_HallDown] && elev.Dir == elevio.MD_Down {
 		return true
 	}
-	if activeOrders[floor][elevio.BT_Cab] {
+	if activeOrders[elev.Floor][elevio.BT_Cab] {
 		return true
 	}
-	if !ordersInFront(floor, int(dir)) {
-		if activeOrders[floor][elevio.BT_HallUp] || activeOrders[floor][elevio.BT_HallDown] {
+	if !orderhandler.OrdersInFront(elev) {
+		if activeOrders[elev.Floor][elevio.BT_HallUp] || activeOrders[elev.Floor][elevio.BT_HallDown] {
 			return true
 		}
 	}
 	return false
 }
 
-func ordersInFront(floor int, dir int) bool {
-	if dir == int(elevio.MD_Stop) {
-		return false
-	}
-	for f := floor + dir; 0 <= f && f < NumFloors; f += dir {
-		for b := 0; b < NumButtons; b++ {
-			if activeOrders[f][b] {
-				return true
-			}
-		}
-	}
-	return false
-}
 
 func anyActiveOrders() bool {
-	for f := 0; f < NumFloors; f++ {
-		for b := 0; b < NumButtons; b++ {
+	for f := 0; f < numFloors; f++ {
+		for b := 0; b < numButtons; b++ {
 			if activeOrders[f][b] {
 				return true
 			}
@@ -81,28 +60,28 @@ func anyActiveOrders() bool {
 	return false
 }
 
-func setDir(floor int, dir int) elevio.MotorDirection {
+func setDir(elev orderhandler.Elevator) elevio.MotorDirection {
 	if !anyActiveOrders() {
 		return elevio.MD_Stop
 	}
-	if dir == int(elevio.MD_Stop) {
-		for f := 0; f < NumFloors; f++ {
-			for b := 0; b < NumButtons; b++ {
+	if elev.Dir == elevio.MD_Stop {
+		for f := 0; f < numFloors; f++ {
+			for b := 0; b < numButtons; b++ {
 				if activeOrders[f][b] {
-					if f < floor {
+					if f < elev.Floor {
 						return elevio.MD_Down
 					}
-					if f > floor {
+					if f > elev.Floor {
 						return elevio.MD_Up
 					}
 				}
 			}
 		}
 	}
-	if ordersInFront(floor, dir) {
-		return elevio.MotorDirection(dir)
+	if orderhandler.OrdersInFront(elev) {
+		return elevio.MotorDirection(elev.Dir)
 	}
-	return elevio.MotorDirection(-dir)
+	return elevio.MotorDirection(-elev.Dir)
 }
 
 func clearFloorOrders(floor int) {
@@ -120,67 +99,44 @@ func takeOrder(floor int, button elevio.ButtonType) {
 }
 
 func initFSM() {
-	elevio.Init("localhost:15657", NumFloors)
+	elevio.Init("localhost:15657", numFloors)
 	//clears all orders
-	for f := 0; f < NumFloors; f++ {
+	for f := 0; f < numFloors; f++ {
 		clearFloorOrders(f)
 	}
 	elevio.SetMotorDirection(elevio.MD_Stop)
 }
 
-func updateLights(log orderhandler.ElevLog) {
-	for i := 0; i < NumElevators; i++ {
-		for b := 0; b < NumButtons-1; b++ {
-			for f := 0; f < NumFloors; f++ {
-				if log[i].Orders[f][b] {
-					elevio.SetButtonLamp(elevio.ButtonType(b), f, true)
-				}
-			}
-		}
-		if i == LogIndex {
-			for f := 0; f < NumFloors; f++ {
-				if log[i].Orders[f][2] {
-					elevio.SetButtonLamp(elevio.BT_Cab, f, true)
-				}
-			}
-		}
-	}
-}
-
 func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int) {
 	// elevio.Init("localhost:15657", numFloors)
 
-	var elev Elevator
+	var elev orderhandler.Elevator
 	initFSM()
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 
-	// deadTimer := time.NewTimer(time.Second)
-	// doorTimer := time.NewTimer(time.Second)
-	// doorTimer.Stop()
-
 	for {
 		select {
 		case order := <-drv_buttons:
 			fmt.Printf("Order:\t%+v\n", order)
-			if !(order.Floor == elev.floor && elev.dir == elevio.MD_Stop) {
+			if !(order.Floor == elev.Floor && elev.Dir == elevio.MD_Stop) {
 				takeOrder(order.Floor, order.Button)
 			}
-			elev.dir = setDir(elev.floor, int(elev.dir))
-			elevio.SetMotorDirection(elev.dir)
+			elev.Dir = setDir(elev)
+			elevio.SetMotorDirection(elev.Dir)
 
 		case floor := <-drv_floors:
 			fmt.Printf("Floor:\t%+v\n", floor)
 			elevio.SetFloorIndicator(floor)
-			elev.floor = floor
+			elev.Floor = floor
 
-			if shouldStop(floor, elev.dir) {
+			if shouldStop(elev) {
 				clearFloorOrders(floor)
 				elevio.SetMotorDirection(elevio.MD_Stop)
 			}
-			elev.dir = setDir(floor, int(elev.dir))
-			elevio.SetMotorDirection(elev.dir)
+			elev.Dir = setDir(elev)
+			elevio.SetMotorDirection(elev.Dir)
 
 		}
 	}
