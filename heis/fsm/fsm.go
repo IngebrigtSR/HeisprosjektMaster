@@ -3,25 +3,27 @@ package fsm
 import (
 	"fmt"
 
+	. "../config"
 	"../elevio"
+	"../orderhandler"
 )
 
-const numFloors int = 4
-const numButtons int = 3
+// const numFloors int = 4
+// const NumButtons int = 3
 
-var activeOrders [numFloors][numButtons]bool
+var activeOrders [NumFloors][NumButtons]bool
 
 type Elevator struct {
 	floor  int
 	dir    elevio.MotorDirection
 	state  int
-	orders [numFloors][numButtons]bool
+	orders [NumFloors][NumButtons]bool
 }
 
 func printOrder() {
 	fmt.Printf("Active Orders: \n")
-	for f := 0; f < numFloors; f++ {
-		for b := 0; b < numButtons; b++ {
+	for f := 0; f < NumFloors; f++ {
+		for b := 0; b < NumButtons; b++ {
 			if activeOrders[f][b] {
 				fmt.Printf("%d\t", 1)
 
@@ -34,7 +36,7 @@ func printOrder() {
 }
 
 func shouldStop(floor int, dir elevio.MotorDirection) bool {
-	if floor == 0 || floor == numFloors-1 {
+	if floor == 0 || floor == NumFloors-1 {
 		return true
 	}
 	if activeOrders[floor][elevio.BT_HallUp] && dir == elevio.MD_Up {
@@ -58,8 +60,8 @@ func ordersInFront(floor int, dir int) bool {
 	if dir == int(elevio.MD_Stop) {
 		return false
 	}
-	for f := floor + dir; 0 <= f && f < numFloors; f += dir {
-		for b := 0; b < numButtons; b++ {
+	for f := floor + dir; 0 <= f && f < NumFloors; f += dir {
+		for b := 0; b < NumButtons; b++ {
 			if activeOrders[f][b] {
 				return true
 			}
@@ -69,8 +71,8 @@ func ordersInFront(floor int, dir int) bool {
 }
 
 func anyActiveOrders() bool {
-	for f := 0; f < numFloors; f++ {
-		for b := 0; b < numButtons; b++ {
+	for f := 0; f < NumFloors; f++ {
+		for b := 0; b < NumButtons; b++ {
 			if activeOrders[f][b] {
 				return true
 			}
@@ -84,8 +86,8 @@ func setDir(floor int, dir int) elevio.MotorDirection {
 		return elevio.MD_Stop
 	}
 	if dir == int(elevio.MD_Stop) {
-		for f := 0; f < numFloors; f++ {
-			for b := 0; b < numButtons; b++ {
+		for f := 0; f < NumFloors; f++ {
+			for b := 0; b < NumButtons; b++ {
 				if activeOrders[f][b] {
 					if f < floor {
 						return elevio.MD_Down
@@ -118,12 +120,31 @@ func takeOrder(floor int, button elevio.ButtonType) {
 }
 
 func initFSM() {
-	elevio.Init("localhost:15657", numFloors)
+	elevio.Init("localhost:15657", NumFloors)
 	//clears all orders
-	for f := 0; f < numFloors; f++ {
+	for f := 0; f < NumFloors; f++ {
 		clearFloorOrders(f)
 	}
 	elevio.SetMotorDirection(elevio.MD_Stop)
+}
+
+func updateLights(log orderhandler.ElevLog) {
+	for i := 0; i < NumElevators; i++ {
+		for b := 0; b < NumButtons-1; b++ {
+			for f := 0; f < NumFloors; f++ {
+				if log[i].Orders[f][b] {
+					elevio.SetButtonLamp(elevio.ButtonType(b), f, true)
+				}
+			}
+		}
+		if i == LogIndex {
+			for f := 0; f < NumFloors; f++ {
+				if log[i].Orders[f][2] {
+					elevio.SetButtonLamp(elevio.BT_Cab, f, true)
+				}
+			}
+		}
+	}
 }
 
 func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int) {
@@ -134,6 +155,10 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int) {
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
+
+	// deadTimer := time.NewTimer(time.Second)
+	// doorTimer := time.NewTimer(time.Second)
+	// doorTimer.Stop()
 
 	for {
 		select {

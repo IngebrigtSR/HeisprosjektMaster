@@ -8,10 +8,14 @@ const (
 	DoorTimer  = 3  //sec
 	ElevTimout = 10 //sec
 
+	LogIndex = 0
+
 	//Div porter for kommunikajson osv
 
 	// LogBCPort = 20000
 )
+
+var ()
 
 type State int
 

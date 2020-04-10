@@ -193,7 +193,8 @@ func ClearOrdersFloor(floor int, elevID int, log ElevLog) ElevLog {
 	return log
 }
 
-func makeEmptyLog() ElevLog {
+//MakeEmptyLog creates an empty ElevLog
+func MakeEmptyLog() ElevLog {
 	var log [NumElevators]Elevator
 
 	for elev := 0; elev < NumElevators; elev++ {
@@ -211,9 +212,8 @@ func makeEmptyLog() ElevLog {
 	return log
 }
 
-func testCostFunction() {
-	ElevLog := makeEmptyLog()
-	elev := ElevLog[0]
+func TestCost(log ElevLog) {
+	elev := log[0]
 
 	elev.Dir = elevio.MD_Down
 	elev.Floor = 1
@@ -229,7 +229,3 @@ func testCostFunction() {
 	fmt.Println("Elevator cost: \t", cost)
 
 }
-
-// func main() {
-// 	testCostFunction()
-// }

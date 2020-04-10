@@ -2,21 +2,39 @@ package main
 
 import (
 	"fmt"
+	"time"
 
-	"../elevio"
-	"../fsm"
+	"../orderhandler"
 )
 
 func main() {
 	fmt.Println("Hello World")
 
-	drv_buttons := make(chan elevio.ButtonEvent)
-	drv_floors := make(chan int)
+	// elevio.Init("localhost:15657", config.NumFloors)
 
-	go fsm.ElevFSM(drv_buttons, drv_floors)
+	// drv_buttons := make(chan elevio.ButtonEvent)
+	// drv_floors := make(chan int)
 
-	a := 1
+	// go fsm.ElevFSM(drv_buttons, drv_floors)
+
+	log := orderhandler.MakeEmptyLog()
+	orderhandler.TestCost(log)
+
+	transmitter := time.NewTicker(1000 * time.Millisecond)
+	timer := time.NewTimer(5 * time.Second)
+	transmit := true
+	count := 0
 	for {
-		a++
+		select {
+
+		case <-timer.C:
+			println("walla walla bing bang")
+
+		case <-transmitter.C:
+			if transmit {
+				count++
+				println("transmitted: \t", count)
+			}
+		}
 	}
 }
