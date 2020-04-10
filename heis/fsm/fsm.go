@@ -3,6 +3,7 @@ package fsm
 import (
 	"fmt"
 
+	. "../config"
 	"../elevio"
 	"../orderhandler"
 )
@@ -47,7 +48,6 @@ func shouldStop(elev orderhandler.Elevator) bool {
 	}
 	return false
 }
-
 
 func anyActiveOrders() bool {
 	for f := 0; f < numFloors; f++ {
@@ -105,6 +105,25 @@ func initFSM() {
 		clearFloorOrders(f)
 	}
 	elevio.SetMotorDirection(elevio.MD_Stop)
+}
+
+func updateLights(log orderhandler.ElevLog) {
+	for i := 0; i < NumElevators; i++ {
+		for b := 0; b < NumButtons-1; b++ {
+			for f := 0; f < NumFloors; f++ {
+				if log[i].Orders[f][b] {
+					elevio.SetButtonLamp(elevio.ButtonType(b), f, true)
+				}
+			}
+		}
+		if i == LogIndex {
+			for f := 0; f < NumFloors; f++ {
+				if log[i].Orders[f][2] {
+					elevio.SetButtonLamp(elevio.BT_Cab, f, true)
+				}
+			}
+		}
+	}
 }
 
 func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int) {
