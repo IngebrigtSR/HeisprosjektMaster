@@ -1,8 +1,6 @@
 package networkmanager
 
 import (
-	"../bcast"
-	"../conn"
 	"../localip"
 	"../peers"
 	"../../../orderhandler"
@@ -11,7 +9,7 @@ import (
 	"fmt"
 )
 
-func InitNewElevator(id int, logPtr* orderhandler.ElevLog){
+func InitNewElevator(logPtr* orderhandler.ElevLog){
 	elev := Elevator{}
 	ip, err = localip.LocalIp()
 	if err != nil{
@@ -30,4 +28,13 @@ func GetLocalIndex(log orderhandler.ElevLog) int {
 		index++
 	}
 	return index
+}
+
+// func MakeLogChannel(log orderhandler.ElevLog) chan orderhandler.ElevLog {
+// 	logChan := make(chan log)
+// 	return logChan
+// }
+
+func UpdateLog(logChan chan orderhandler.ElevLog, log* orderhandler.ElevLog) {
+	*log <- logChan
 }
