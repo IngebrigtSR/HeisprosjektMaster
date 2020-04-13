@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	. "../config"
+	. "../orderhandler"
+
 	"../elevio"
-	"../orderhandler"
 )
 
 var activeOrders [NumFloors][NumButtons]bool
