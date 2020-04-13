@@ -85,9 +85,9 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 
 	switch S := elev.State; S {
 	case DEAD:
-		cost = 10000 //Infinity?
+		cost = math.MaxInt32 //Infinity?
 	case INIT:
-		cost = 10000
+		cost = math.MaxInt32
 	case IDLE:
 		cost = int(math.Abs(float64(elev.Floor - order.Floor))) //#floors between new order and elevator
 	default:
