@@ -10,6 +10,7 @@ import (
 
 //Elevator struct
 type Elevator struct {
+	Id 	   string
 	Dir    elevio.MotorDirection
 	Floor  int
 	State  State

@@ -5,10 +5,19 @@ import (
 	"time"
 
 	"../orderhandler"
+	"../network/networkmanager"
 )
 
 func main() {
 	fmt.Println("Hello World")
+
+	// TODO: Sjekk om det allerede finnes andre heiser i loggen fra før av
+	
+	var log []Elevator
+	networkmanager.InitNewElevator(&log)
+	localIndex := networkmanager.GetLocalIndex(log)
+
+	// TODO: Endre på InitFSM slik at den opererer med localIndex
 
 	// elevio.Init("localhost:15657", config.NumFloors)
 
