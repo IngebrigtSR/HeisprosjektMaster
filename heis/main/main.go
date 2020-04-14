@@ -37,7 +37,7 @@ func main() {
 	}
 	
 	networkmanager.InitNewElevator(&log)
-	const localIndex := networkmanager.GetLocalIndex(log)
+	const localIndex := networkmanager.GetLogIndex(log, localip.LocalIP())
 
 
 
@@ -54,6 +54,8 @@ func main() {
 
 	InitFSM(drv_floors, localIndex)
 	go fsm.ElevFSM(drv_buttons, drv_floors, startUp)
+
+	elev := log[localIndex]
 
 	orderhandler.TestCost(log)
 
@@ -72,11 +74,19 @@ func main() {
 				count++
 				println("transmitted: \t", count)
 			}
-		}
-		case p:= <- peerUpdateCh:
+
+		case p := <- peerUpdateCh:
 			if p.Lost != ""{
-				lost := p.Lost
+				lostId := p.Lost
+				deadElevIndex := networkmanager.GetLogIndex(log, lostId)
+				deadElev := log[deadElevIndex]
+				log = orderhandler.ReAssignOrders(log, deadElev)
+				log[deadElevIndex].State = DEAD
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
+		case log <- logRx:
+
 		}
+		
+	}
 }

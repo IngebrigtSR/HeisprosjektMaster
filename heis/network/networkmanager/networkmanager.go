@@ -27,9 +27,9 @@ func InitNewElevator(logPtr* orderhandler.ElevLog){
 	}
 }
 
-func GetLocalIndex(log orderhandler.ElevLog) int {
+func GetLogIndex(log orderhandler.ElevLog, ip string) int {
 	index := 0
-	for log[index].Id != localip.LocalIp() {
+	for log[index].Id != ip {
 		index++
 	}
 	return index
