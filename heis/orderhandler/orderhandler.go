@@ -214,6 +214,7 @@ func MakeEmptyLog() ElevLog {
 		log[elev].Dir = elevio.MD_Stop
 		log[elev].Floor = -1
 		log[elev].State = DEAD
+		log[elev].Id = ""
 
 		for i := 0; i < NumFloors; i++ {
 			for j := 0; j < NumButtons; j++ {

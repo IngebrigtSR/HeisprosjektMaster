@@ -6,6 +6,7 @@ import (
 	"../../orderhandler"
 	"../../elevio"
 	"fmt"
+	. "../../config"
 )
 
 func InitNewElevator(logPtr* orderhandler.ElevLog){
@@ -18,7 +19,12 @@ func InitNewElevator(logPtr* orderhandler.ElevLog){
 	elev.Dir = elevio.MD_Stop
 	elev.Floor = -1
 	elev.State = INIT
-	*logPtr = append(*logPtr, elev)
+	for i := 0; i < NumElevators; i++ {
+		if (*logPtr)[i].Id == "" && (*logPtr)[i].State == DEAD{
+			(*logPtr)[i] = elev
+			return
+		}
+	}
 }
 
 func GetLocalIndex(log orderhandler.ElevLog) int {

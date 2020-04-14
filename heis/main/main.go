@@ -6,31 +6,55 @@ import (
 
 	"../orderhandler"
 	"../network/networkmanager"
+	"../network/peers"
+	"../network/localip"
+	. "../config"
 )
 
 func main() {
 	fmt.Println("Hello World")
 
-	// TODO: Sjekk om det allerede finnes andre heiser i loggen fra før av
+	peerUpdateCh := make(chan peers.PeerUpdate)
+	peerTxEnable := make(chan bool)
+	const localIP := localip.LocalIP()
+	go peers.Transmitter(15647, localIP, peerTxEnable)
+	go peers.Receiver(15647, peerUpdateCh)
 	
-	var log []Elevator
+	var log orderhandler.ElevLog
+
+	logTx := make(chan orderhandler.ElevLog)
+	logRx := make(chan orderhandler.ElevLog)
+	go bcast.Transmitter(16569, logTx)
+	go bcast.Receiver(16569, logRx)
+	
+	
+	p := <- peerUpdateCh
+	if p.Peers == "" {
+		log = orderhandler.MakeEmptyLog()
+	}
+	else {
+		log = <- logRx
+	}
+	
 	networkmanager.InitNewElevator(&log)
-	localIndex := networkmanager.GetLocalIndex(log)
+	const localIndex := networkmanager.GetLocalIndex(log)
 
-	// TODO: Endre på InitFSM slik at den opererer med localIndex
 
-	// elevio.Init("localhost:15657", config.NumFloors)
 
-	// drv_buttons := make(chan elevio.ButtonEvent)
-	// drv_floors := make(chan int)
-	// startUp := make(chan bool)
 
-	// go elevio.PollButtons(drv_buttons)
-	// go elevio.PollFloorSensor(drv_floors)
+	elevio.Init("localhost:15657", config.NumFloors)
 
-	// go fsm.ElevFSM(drv_buttons, drv_floors, startUp)
+	drv_buttons := make(chan elevio.ButtonEvent)
+	drv_floors := make(chan int)
+	startUp := make(chan bool)
 
-	log := orderhandler.MakeEmptyLog()
+
+	go elevio.PollButtons(drv_buttons)
+	go elevio.PollFloorSensor(drv_floors)
+
+	InitFSM(drv_floors, localIndex)
+	go fsm.ElevFSM(drv_buttons, drv_floors, startUp)
+
 	orderhandler.TestCost(log)
 
 	transmitter := time.NewTicker(1000 * time.Millisecond)
@@ -49,5 +73,10 @@ func main() {
 				println("transmitted: \t", count)
 			}
 		}
-	}
+		case p:= <- peerUpdateCh:
+			if p.Lost != ""{
+				lost := p.Lost
+				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
+			}
+		}
 }

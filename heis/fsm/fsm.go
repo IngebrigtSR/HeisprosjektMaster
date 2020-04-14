@@ -135,9 +135,9 @@ func floorArrival(log orderhandler.ElevLog, floor int) orderhandler.ElevLog {
 }
 
 //InitFSM initializes the FSM
-func InitFSM(drv_floors chan int) {
+func InitFSM(drv_floors chan int, localIndex int) {
 	log := orderhandler.GetLog()
-	elev := log[LogIndex]
+	elev := log[localIndex]
 	elevio.SetMotorDirection(elevio.MD_Down)
 
 	floor := <-drv_floors
@@ -148,14 +148,13 @@ func InitFSM(drv_floors chan int) {
 	elev.Dir = elevio.MD_Stop
 	elev.Floor = floor
 
-	log[LogIndex] = elev
+	log[localIndex] = elev
 	orderhandler.SetLog(log)
 }
 
 //ElevFSM handles logic used to execute waiting orders and run the elevator
 func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool) {
 
-	InitFSM(drv_floors)
 
 	watchdog := time.NewTimer(ElevTimeout * time.Second)
 
