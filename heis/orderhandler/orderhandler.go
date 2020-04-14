@@ -10,7 +10,7 @@ import (
 
 //Elevator struct
 type Elevator struct {
-	Id 	   string
+	Id     string
 	Dir    elevio.MotorDirection
 	Floor  int
 	State  State
@@ -32,6 +32,7 @@ func SetLog(newLog ElevLog) {
 	localLog = newLog
 }
 
+//orderAbove checks if there are any orders above the elevators current position
 func ordersAbove(elev Elevator) bool {
 	for f := elev.Floor + 1; 0 <= f && f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
@@ -43,6 +44,7 @@ func ordersAbove(elev Elevator) bool {
 	return false
 }
 
+//orderBelow checks if there are any orders below the elevators current position
 func ordersBelow(elev Elevator) bool {
 	for f := elev.Floor - 1; 0 <= f && f < NumFloors; f-- {
 		for b := 0; b < NumButtons; b++ {
@@ -77,16 +79,23 @@ func ordersOnFloor(floor int, elev Elevator) bool {
 	return false
 }
 
+//Ting som vi kan forske paa i costfunksjonen:
+//Boer ordre som er i samme retning som en ny ordre koste mindre enn de som er i motsatt retning?
+//Case DEAD og INIT: Selv om vi setter cost til maksimum, saa er det vel fremdeles teoretisk mulig
+//at de kan faa en ordre tildelt? Foreslaar at vi tar en DEAD/INIT-sjekk foer det i det hele tatt
+//oppstaar et spoersmaal om hvilken eis som skal faa ordren
+
 func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 	//Passing floor = +1
 	//Stopping at floor = +2
 
 	elev := elevator //copy of elevator to simulate movement for cost calculation
-	cost := 0
+	cost := 0        //Init value for cost
 
+	//
 	switch S := elev.State; S {
 	case DEAD:
-		cost = math.MaxInt32 //Infinity?
+		cost = math.MaxInt32 //Se kommentar over getCost
 	case INIT:
 		cost = math.MaxInt32
 	case IDLE:
