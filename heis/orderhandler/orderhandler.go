@@ -166,8 +166,26 @@ func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 	return cheapestElev
 }
 
+//Checks if all the elevators are dead
+func allElevatorsDead(log ElevLog) bool {
+	for elev := 0; elev < NumElevators; elev++ {
+		if log[elev].State == DEAD {
+
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
 //DistributeOrder assigns a given order to the "closest" elevator
 func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
+
+	if allElevatorsDead(log) {
+		fmt.Println("orderhandler --> DistributeOrder says: All elevators are dead")
+		return log
+	}
+
 	cheapestElev := getCheapestElev(order, log)
 
 	log[cheapestElev].Orders[order.Floor][order.Button] = 1
