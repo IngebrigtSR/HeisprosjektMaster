@@ -32,7 +32,7 @@ func SetLog(newLog ElevLog) {
 	localLog = newLog
 }
 
-//orderAbove checks if there are any orders above the elevators current position
+//ordersAbove checks if there are any orders above the elevators current position
 func ordersAbove(elev Elevator) bool {
 	for f := elev.Floor + 1; 0 <= f && f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
@@ -44,7 +44,7 @@ func ordersAbove(elev Elevator) bool {
 	return false
 }
 
-//orderBelow checks if there are any orders below the elevators current position
+//ordersBelow checks if there are any orders below the elevators current position
 func ordersBelow(elev Elevator) bool {
 	for f := elev.Floor - 1; 0 <= f && f < NumFloors; f-- {
 		for b := 0; b < NumButtons; b++ {
