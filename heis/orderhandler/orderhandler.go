@@ -169,9 +169,7 @@ func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 //Checks if all the elevators are dead
 func allElevatorsDead(log ElevLog) bool {
 	for elev := 0; elev < NumElevators; elev++ {
-		if log[elev].State == DEAD {
-
-		} else {
+		if log[elev].State != DEAD {
 			return false
 		}
 	}
