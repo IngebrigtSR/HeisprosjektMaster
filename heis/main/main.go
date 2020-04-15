@@ -75,8 +75,8 @@ func main() {
 		case p := <-peerUpdateCh:
 			if len(p.Lost) != 0 {
 				for i := 0; i < len(p.Lost); i++ {
-					lostId := p.Lost[i]
-					deadElevIndex := networkmanager.GetLogIndex(newLog, lostId)
+					lostID := p.Lost[i]
+					deadElevIndex := networkmanager.GetLogIndex(newLog, lostID)
 					newLog = orderhandler.ReAssignOrders(newLog, deadElevIndex)
 					newLog[deadElevIndex].State = DEAD
 				}

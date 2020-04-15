@@ -160,17 +160,6 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 	doorTimer.Stop()
 	for {
 		select {
-		case <-startUp: //Detects if main recieves new log from Network (only needed to get Elev out of IDLE)
-			log := orderhandler.GetLog()
-			if log[LogIndex].State == IDLE {
-				dir := getDir(log[LogIndex])
-				elevio.SetMotorDirection(dir)
-				log[LogIndex].Dir = dir
-
-				if dir != elevio.MD_Stop {
-					log[LogIndex].State = MOVING
-				}
-			}
 
 		case order := <-drv_buttons:
 			log := orderhandler.GetLog()
@@ -209,6 +198,26 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			dir := getDir(log[LogIndex])
 			elevio.SetMotorDirection(dir)
 			log[LogIndex].Dir = dir
+			orderhandler.SetLog(log)
+
+		case <-startUp: //Detects if main recieves new log from Network (only needed to get Elev out of IDLE)
+			log := orderhandler.GetLog()
+			if log[LogIndex].State == IDLE {
+				dir := getDir(log[LogIndex])
+				elevio.SetMotorDirection(dir)
+				log[LogIndex].Dir = dir
+
+				if dir != elevio.MD_Stop {
+					log[LogIndex].State = MOVING
+				}
+			}
+		case <-watchdog.C:
+			log := orderhandler.GetLog()
+			if log[LogIndex].State == IDLE {
+				watchdog.Reset(ElevTimeout * time.Second)
+			} else {
+				log[LogIndex].State = DEAD
+			}
 			orderhandler.SetLog(log)
 		}
 	}
