@@ -37,6 +37,7 @@ func main() {
 	}
 	networkmanager.InitNewElevator(&newLog)
 	localIndex := networkmanager.GetLogIndex(newLog, localIP)
+	println("Local index: \t ", localIndex)
 
 	elevio.Init("localhost:15657", NumFloors)
 
@@ -48,7 +49,7 @@ func main() {
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 
-	fsm.InitFSM(drv_floors, localIndex)
+	fsm.InitFSM(drv_floors, localIndex, logFromFSM)
 	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM)
 
 	// elev := log[localIndex]
@@ -57,7 +58,7 @@ func main() {
 
 	transmitter := time.NewTicker(1000 * time.Millisecond)
 	timer := time.NewTimer(5 * time.Second)
-	transmit := true
+	transmit := false
 	count := 0
 	for {
 		select {
