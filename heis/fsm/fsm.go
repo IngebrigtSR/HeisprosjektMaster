@@ -155,9 +155,9 @@ func InitFSM(drv_floors chan int, localIndex int) {
 //ElevFSM handles logic used to execute waiting orders and run the elevator
 func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool) {
 
-
 	watchdog := time.NewTimer(ElevTimeout * time.Second)
-
+	doorTimer := time.NewTimer(DoorOpenTime * time.Second)
+	doorTimer.Stop()
 	for {
 		select {
 		case <-startUp: //Detects if main recieves new log from Network (only needed to get Elev out of IDLE)
@@ -184,9 +184,10 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			watchdog.Reset(ElevTimeout * time.Second)
 
 		case floor := <-drv_floors:
+			watchdog.Reset(ElevTimeout * time.Second)
+
 			fmt.Printf("Floor:\t%+v\n", floor)
 			elevio.SetFloorIndicator(floor)
-			watchdog.Reset(ElevTimeout * time.Second)
 
 			log := orderhandler.GetLog()
 			log[LogIndex].Floor = floor
@@ -196,15 +197,18 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				elevio.SetMotorDirection(elevio.MD_Stop)
 
 				elevio.SetDoorOpenLamp(true)
-				doorTimer := time.NewTimer(DoorOpenTime * time.Second)
-				<-doorTimer.C
-				elevio.SetDoorOpenLamp(false)
-
-				dir := getDir(log[LogIndex])
-				elevio.SetMotorDirection(dir)
-				log[LogIndex].Dir = dir
+				doorTimer.Reset(DoorOpenTime * time.Second)
+				log[LogIndex].State = DOOROPEN
 			}
 
+			orderhandler.SetLog(log)
+		case <-doorTimer.C:
+			log := orderhandler.GetLog()
+
+			elevio.SetDoorOpenLamp(false)
+			dir := getDir(log[LogIndex])
+			elevio.SetMotorDirection(dir)
+			log[LogIndex].Dir = dir
 			orderhandler.SetLog(log)
 		}
 	}
