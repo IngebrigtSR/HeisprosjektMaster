@@ -7,9 +7,6 @@ import (
 	"../../elevio"
 	"../../orderhandler"
 	"../localip"
-	// "../../elevio"
-	// "../../orderhandler"
-	// "../localip"
 )
 
 func InitNewElevator(logPtr *orderhandler.ElevLog) {
