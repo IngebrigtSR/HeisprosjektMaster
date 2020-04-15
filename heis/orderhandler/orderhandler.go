@@ -69,7 +69,7 @@ func OrdersInFront(elev Elevator) bool {
 	return false
 }
 
-//Checks if an elevetor has orders on a given floor, used to for calculations in cost function
+//Checks if an elevator has orders on a given floor, used to for calculations in cost function
 func ordersOnFloor(floor int, elev Elevator) bool {
 
 	switch d := elev.Dir; d {
@@ -88,12 +88,6 @@ func ordersOnFloor(floor int, elev Elevator) bool {
 	}
 	return false
 }
-
-//Ting som vi kan forske paa i costfunksjonen:
-//Boer ordre som er i samme retning som en ny ordre koste mindre enn de som er i motsatt retning?
-//Case DEAD og INIT: Selv om vi setter cost til maksimum, saa er det vel fremdeles teoretisk mulig
-//at de kan faa en ordre tildelt? Foreslaar at vi tar en DEAD/INIT-sjekk foer det i det hele tatt
-//oppstaar et spoersmaal om hvilken eis som skal faa ordren
 
 func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 
@@ -144,7 +138,7 @@ func oldCost(order elevio.ButtonEvent, elevator Elevator) int {
 	//
 	switch S := elev.State; S {
 	case DEAD:
-		cost = math.MaxInt32 //Se kommentar over getCost
+		cost = math.MaxInt32
 	case INIT:
 		cost = math.MaxInt32
 	case IDLE:
@@ -227,11 +221,6 @@ func AllElevatorsDead(log ElevLog) bool {
 
 //DistributeOrder assigns a given order to the "closest" elevator
 func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
-
-	if AllElevatorsDead(log) {
-		fmt.Println("orderhandler --> DistributeOrder says: All elevators are dead")
-		return log
-	}
 
 	cheapestElev := getCheapestElev(order, log)
 	if cheapestElev == LogIndex {

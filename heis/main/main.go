@@ -17,6 +17,7 @@ import (
 func main() {
 	fmt.Println("Hello World")
 
+	//Peers
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	localIP, _ := localip.LocalIP()
@@ -35,6 +36,8 @@ func main() {
 	} else {
 		newLog = <-logRx
 	}
+
+	//Network
 	networkmanager.InitNewElevator(&newLog)
 	localIndex := networkmanager.GetLogIndex(newLog, localIP)
 	println("Local index: \t ", localIndex)
