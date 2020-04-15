@@ -71,9 +71,19 @@ func OrdersInFront(elev Elevator) bool {
 
 //Does not take direction into account, only used for cost function
 func ordersOnFloor(floor int, elev Elevator) bool {
-	for b := 0; b < NumButtons; b++ {
-		if elev.Orders[floor][b] != 0 {
-			return true
+
+	switch d := elev.Dir; d {
+	case elevio.MD_Down:
+		return elev.Orders[floor][int(elevio.BT_HallDown)] != 0
+
+	case elevio.MD_Up:
+		return elev.Orders[floor][int(elevio.BT_HallUp)] != 0
+
+	case elevio.MD_Stop:
+		for b := 0; b < NumButtons; b++ {
+			if elev.Orders[floor][b] != 0 {
+				return true
+			}
 		}
 	}
 	return false
@@ -84,6 +94,45 @@ func ordersOnFloor(floor int, elev Elevator) bool {
 //Case DEAD og INIT: Selv om vi setter cost til maksimum, saa er det vel fremdeles teoretisk mulig
 //at de kan faa en ordre tildelt? Foreslaar at vi tar en DEAD/INIT-sjekk foer det i det hele tatt
 //oppstaar et spoersmaal om hvilken eis som skal faa ordren
+
+func oldCost(order elevio.ButtonEvent, elevator Elevator) int {
+
+	elev := elevator //copy of elevator to simulate movement for cost calculation
+	cost := 0        //Init value for cost
+
+	switch S := elev.State; S {
+	case DEAD:
+		cost = math.MaxInt32 //Se kommentar over getCost
+	case INIT:
+		cost = math.MaxInt32
+	case IDLE:
+		cost = int(math.Abs(float64(elev.Floor - order.Floor))) //#floors between new order and elevator
+	default:
+		startFloor := elev.Floor
+		println(startFloor)
+
+		for elev.Floor != order.Floor {
+			if ordersOnFloor(elev.Floor, elev) {
+				cost += 2
+			} else {
+				cost++
+			}
+			if !OrdersInFront(elev) {
+				if elev.Dir == elevio.MD_Down && elev.Floor < order.Floor {
+					elev.Dir = elevio.MotorDirection(-int(elev.Dir))
+				}
+				if elev.Dir == elevio.MD_Up && elev.Floor > order.Floor {
+					elev.Dir = elevio.MotorDirection(-int(elev.Dir))
+				}
+			}
+			if 0 == elev.Floor && elev.Dir == elevio.MD_Down || elev.Floor == NumFloors && elev.Dir == elevio.MD_Up {
+				elev.Dir = elevio.MotorDirection(-int(elev.Dir))
+			}
+			elev.Floor += int(elev.Dir)
+		}
+	}
+	return cost
+}
 
 func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 	//Passing floor = +1
@@ -254,17 +303,24 @@ func MakeEmptyLog() ElevLog {
 func TestCost(log ElevLog) {
 	elev := log[0]
 
-	elev.Dir = elevio.MD_Down
+	elev.Dir = elevio.MD_Up
 	elev.Floor = 1
 	elev.State = MOVING
 
-	elev.Orders[2][2] = 2
-	elev.Orders[0][2] = 2
+	elev.Orders[2][1] = 2
+	//elev.Orders[0][2] = 2
 
-	testOrder := elevio.ButtonEvent{Floor: 3, Button: elevio.BT_HallUp}
+	testOrder := elevio.ButtonEvent{Floor: 3, Button: elevio.BT_Cab}
 
-	cost := getCost(testOrder, elev)
+	cost1 := oldCost(testOrder, elev)
+	cost2 := getCost(testOrder, elev)
 
-	fmt.Println("Elevator cost: \t", cost)
+	fmt.Println("Old cost fun: \t", cost1)
+	fmt.Println("New cost fun: \t", cost2)
 
 }
+
+// func main() {
+// 	log := MakeEmptyLog()
+// 	TestCost(log)
+// }
