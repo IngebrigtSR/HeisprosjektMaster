@@ -32,7 +32,7 @@ func SetLog(newLog ElevLog) {
 	localLog = newLog
 }
 
-//orderAbove checks if there are any orders above the elevators current position
+//ordersAbove checks if there are any orders above the elevators current position
 func ordersAbove(elev Elevator) bool {
 	for f := elev.Floor + 1; 0 <= f && f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
@@ -44,7 +44,7 @@ func ordersAbove(elev Elevator) bool {
 	return false
 }
 
-//orderBelow checks if there are any orders below the elevators current position
+//ordersBelow checks if there are any orders below the elevators current position
 func ordersBelow(elev Elevator) bool {
 	for f := elev.Floor - 1; 0 <= f && f < NumFloors; f-- {
 		for b := 0; b < NumButtons; b++ {
@@ -69,7 +69,7 @@ func OrdersInFront(elev Elevator) bool {
 	return false
 }
 
-//Does not take direction into account, only used for cost function
+//Checks if an elevetor has orders on a given floor, used to for calculations in cost function
 func ordersOnFloor(floor int, elev Elevator) bool {
 
 	switch d := elev.Dir; d {
@@ -234,8 +234,11 @@ func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
 	}
 
 	cheapestElev := getCheapestElev(order, log)
-
-	log[cheapestElev].Orders[order.Floor][order.Button] = 1
+	if cheapestElev == LogIndex {
+		log[cheapestElev].Orders[order.Floor][order.Button] = 2
+	} else {
+		log[cheapestElev].Orders[order.Floor][order.Button] = 1
+	}
 	return log
 }
 
@@ -248,6 +251,18 @@ func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 					order := elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
 					log = DistributeOrder(order, log)
 				}
+			}
+		}
+	}
+	return log
+}
+
+//AcceptOrders goes through the log and looks for orders assigned to the local Elevator and accepts them
+func AcceptOrders(log Elevlog) Elevlog {
+	for f := 0; f < NumFloors; f++ {
+		for b := 0; b < NumButtons; b++ {
+			if log[LogIndex].Orders[f][b] == 1 {
+				log[LogIndex].Orders[f][b] = 2
 			}
 		}
 	}
