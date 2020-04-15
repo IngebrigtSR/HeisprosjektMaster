@@ -95,7 +95,7 @@ func ordersOnFloor(floor int, elev Elevator) bool {
 //at de kan faa en ordre tildelt? Foreslaar at vi tar en DEAD/INIT-sjekk foer det i det hele tatt
 //oppstaar et spoersmaal om hvilken eis som skal faa ordren
 
-func oldCost(order elevio.ButtonEvent, elevator Elevator) int {
+func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 
 	elev := elevator //copy of elevator to simulate movement for cost calculation
 	cost := 0        //Init value for cost
@@ -134,7 +134,7 @@ func oldCost(order elevio.ButtonEvent, elevator Elevator) int {
 	return cost
 }
 
-func getCost(order elevio.ButtonEvent, elevator Elevator) int {
+func oldCost(order elevio.ButtonEvent, elevator Elevator) int {
 	//Passing floor = +1
 	//Stopping at floor = +2
 
