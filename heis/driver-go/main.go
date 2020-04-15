@@ -117,21 +117,24 @@ func takeOrder(floor int, button elevio.ButtonType) {
 	// printOrder()
 }
 
-func initFSM() {
-	elevio.Init("localhost:15657", numFloors)
+func initFSM(drv_floors chan int) Elevator {
+	//elevio.Init("localhost:15657", numFloors)
+	var elev Elevator
+
 	//clears all orders
 	for f := 0; f < numFloors; f++ {
 		clearFloorOrders(f)
 	}
+	elevio.SetMotorDirection(elevio.MD_Down)
+	floor := <-drv_floors
 	elevio.SetMotorDirection(elevio.MD_Stop)
+	elev.dir = elevio.MD_Stop
+	elev.floor = floor
+	return elev
 }
 
 func elevFSM() {
-	// elevio.Init("localhost:15657", numFloors)
-
-	var elev Elevator
-
-	initFSM()
+	elevio.Init("localhost:15657", numFloors)
 
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
@@ -142,6 +145,8 @@ func elevFSM() {
 	go elevio.PollFloorSensor(drv_floors)
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
+
+	elev := initFSM(drv_floors)
 
 	doorTimer := time.NewTimer(3 * time.Second)
 	doorTimer.Stop()
