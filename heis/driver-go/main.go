@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"./elevio"
 )
 
 const numFloors int = 4
 const numButtons int = 3
+const DoorOpenTime int = 3
 
 var activeOrders [numFloors][numButtons]bool
 
@@ -141,6 +143,9 @@ func elevFSM() {
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 
+	doorTimer := time.NewTimer(3 * time.Second)
+	doorTimer.Stop()
+
 	for {
 		select {
 		case order := <-drv_buttons:
@@ -148,8 +153,10 @@ func elevFSM() {
 			if !(order.Floor == elev.floor && elev.dir == elevio.MD_Stop) {
 				takeOrder(order.Floor, order.Button)
 			}
-			elev.dir = setDir(elev.floor, int(elev.dir))
-			elevio.SetMotorDirection(elev.dir)
+			if elev.dir == elevio.MD_Stop {
+				elev.dir = setDir(elev.floor, int(elev.dir))
+				elevio.SetMotorDirection(elev.dir)
+			}
 
 		case floor := <-drv_floors:
 			fmt.Printf("Floor:\t%+v\n", floor)
@@ -159,8 +166,14 @@ func elevFSM() {
 			if shouldStop(floor, elev.dir) {
 				clearFloorOrders(floor)
 				elevio.SetMotorDirection(elevio.MD_Stop)
+
+				elevio.SetDoorOpenLamp(true)
+				doorTimer.Reset(3 * time.Second)
 			}
-			elev.dir = setDir(floor, int(elev.dir))
+
+		case <-doorTimer.C:
+			elevio.SetDoorOpenLamp(false)
+			elev.dir = setDir(elev.floor, int(elev.dir))
 			elevio.SetMotorDirection(elev.dir)
 
 		case a := <-drv_obstr:
