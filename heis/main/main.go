@@ -45,12 +45,13 @@ func main() {
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	startUp := make(chan bool)
+	logFromFSM := make(chan orderhandler.ElevLog)
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 
 	fsm.InitFSM(drv_floors, localIndex)
-	go fsm.ElevFSM(drv_buttons, drv_floors, startUp)
+	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM)
 
 	// elev := log[localIndex]
 
@@ -70,6 +71,11 @@ func main() {
 			if transmit {
 				count++
 				println("transmitted: \t", count)
+			}
+		case updatedLog := <-logFromFSM:
+			orderhandler.SetLog(updatedLog)
+			if updatedLog != orderhandler.GetLog() {
+				transmit = true
 			}
 
 		case p := <-peerUpdateCh:
