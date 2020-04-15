@@ -29,14 +29,12 @@ func main() {
 	logRx := make(chan orderhandler.ElevLog)
 	go bcast.Transmitter(16569, logTx)
 	go bcast.Receiver(16569, logRx)
-
 	p := <-peerUpdateCh
-	if len(p.Peers) == 0 {
+	if len(p.Peers) == 1 {
 		newLog = orderhandler.MakeEmptyLog()
 	} else {
 		newLog = <-logRx
 	}
-
 	networkmanager.InitNewElevator(&newLog)
 	localIndex := networkmanager.GetLogIndex(newLog, localIP)
 
