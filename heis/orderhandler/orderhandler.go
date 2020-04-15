@@ -262,24 +262,23 @@ func AcceptOrders(log ElevLog) ElevLog {
 func ClearOrdersFloor(floor int, elevID int, log ElevLog) ElevLog {
 	elev := log[elevID]
 
-	if floor == elev.Floor {
-		switch S := elev.State; S {
-		case IDLE:
-			for b := 0; b < NumButtons; b++ {
-				elev.Orders[floor][b] = 0
-			}
-		case MOVING:
-			if elev.Orders[floor][elevio.BT_Cab] != 0 {
-				elev.Orders[floor][elevio.BT_Cab] = 0
-			}
-			if elev.Orders[floor][elevio.BT_HallUp] != 0 && elev.Dir == elevio.MD_Up {
-				elev.Orders[floor][elevio.BT_HallUp] = 0
-			}
-			if elev.Orders[floor][elevio.BT_HallDown] != 0 && elev.Dir == elevio.MD_Down {
-				elev.Orders[floor][elevio.BT_HallDown] = 0
-			}
+	switch S := elev.State; S {
+	case IDLE:
+		for b := 0; b < NumButtons; b++ {
+			elev.Orders[floor][b] = 0
+		}
+	case MOVING:
+		if elev.Orders[floor][elevio.BT_Cab] != 0 {
+			elev.Orders[floor][elevio.BT_Cab] = 0
+		}
+		if elev.Orders[floor][elevio.BT_HallUp] != 0 && elev.Dir == elevio.MD_Up {
+			elev.Orders[floor][elevio.BT_HallUp] = 0
+		}
+		if elev.Orders[floor][elevio.BT_HallDown] != 0 && elev.Dir == elevio.MD_Down {
+			elev.Orders[floor][elevio.BT_HallDown] = 0
 		}
 	}
+
 	log[elevID] = elev
 	return log
 }
@@ -302,6 +301,16 @@ func MakeEmptyLog() ElevLog {
 
 	}
 	return log
+}
+
+func PrintOrders(elevIndex int, log ElevLog) {
+	for i := 0; i < NumButtons; i++ {
+		for j := 0; j < NumFloors; j++ {
+			fmt.Print(log[elevIndex].Orders[j][i], "\t")
+		}
+		println()
+	}
+	println()
 }
 
 func TestCost(log ElevLog) {
