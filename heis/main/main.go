@@ -3,14 +3,15 @@ package main
 import (
 	"fmt"
 	"time"
+
+	. "../config"
 	"../elevio"
-	"../orderhandler"
-	"../network/networkmanager"
-	"../network/peers"
+	"../fsm"
 	"../network/bcast"
 	"../network/localip"
-	. "../config"
-	"../fsm"
+	"../network/networkmanager"
+	"../network/peers"
+	"../orderhandler"
 )
 
 func main() {
@@ -21,34 +22,29 @@ func main() {
 	localIP, _ := localip.LocalIP()
 	go peers.Transmitter(15647, localIP, peerTxEnable)
 	go peers.Receiver(15647, peerUpdateCh)
-	
+
 	var newLog orderhandler.ElevLog
 
 	logTx := make(chan orderhandler.ElevLog)
 	logRx := make(chan orderhandler.ElevLog)
 	go bcast.Transmitter(16569, logTx)
 	go bcast.Receiver(16569, logRx)
-	
-	
-	p := <- peerUpdateCh
+
+	p := <-peerUpdateCh
 	if len(p.Peers) == 0 {
 		newLog = orderhandler.MakeEmptyLog()
 	} else {
-		newLog = <- logRx
+		newLog = <-logRx
 	}
-	
+
 	networkmanager.InitNewElevator(&newLog)
 	localIndex := networkmanager.GetLogIndex(newLog, localIP)
-
-
-
 
 	elevio.Init("localhost:15657", NumFloors)
 
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	startUp := make(chan bool)
-
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
@@ -58,7 +54,7 @@ func main() {
 
 	// elev := log[localIndex]
 
-	orderhandler.TestCost(log)
+	orderhandler.TestCost(newLog)
 
 	transmitter := time.NewTicker(1000 * time.Millisecond)
 	timer := time.NewTimer(5 * time.Second)
@@ -76,8 +72,8 @@ func main() {
 				println("transmitted: \t", count)
 			}
 
-		case p := <- peerUpdateCh:
-			if len(p.Lost) != 0{
+		case p := <-peerUpdateCh:
+			if len(p.Lost) != 0 {
 				for i := 0; i < len(p.Lost); i++ {
 					lostId := p.Lost[i]
 					deadElevIndex := networkmanager.GetLogIndex(newLog, lostId)
@@ -86,9 +82,9 @@ func main() {
 				}
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
-		case newLog = <- logRx:
+		case newLog = <-logRx:
 
 		}
-		
+
 	}
 }
