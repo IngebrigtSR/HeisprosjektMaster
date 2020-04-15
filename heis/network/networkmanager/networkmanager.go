@@ -2,7 +2,6 @@ package networkmanager
 
 import (
 	"../localip"
-	"../peers"
 	"../../orderhandler"
 	"../../elevio"
 	"fmt"
@@ -10,10 +9,10 @@ import (
 )
 
 func InitNewElevator(logPtr* orderhandler.ElevLog){
-	elev := Elevator{}
-	ip, err = localip.LocalIp()
+	elev := orderhandler.Elevator{}
+	ip, err := localip.LocalIP()
 	if err != nil{
-		fmt.println(err)
+		fmt.Println(err)
 	}
 	elev.Id = ip
 	elev.Dir = elevio.MD_Stop
@@ -36,5 +35,5 @@ func GetLogIndex(log orderhandler.ElevLog, ip string) int {
 }
 
 func UpdateLog(logChan chan orderhandler.ElevLog, log* orderhandler.ElevLog) {
-	*log <- logChan
+	(*log) = <- logChan
 }
