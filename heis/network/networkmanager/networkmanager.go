@@ -3,10 +3,10 @@ package networkmanager
 import (
 	"../localip"
 	"../peers"
-	"../../../orderhandler"
-	"../../../fsm"
-	"../../../elevio"
+	"../../orderhandler"
+	"../../elevio"
 	"fmt"
+	. "../../config"
 )
 
 func InitNewElevator(logPtr* orderhandler.ElevLog){
@@ -17,23 +17,23 @@ func InitNewElevator(logPtr* orderhandler.ElevLog){
 	}
 	elev.Id = ip
 	elev.Dir = elevio.MD_Stop
+	elev.Floor = -1
 	elev.State = INIT
-	*logPtr = append(*logPtr, elev)
-	fsm.InitFSM()
+	for i := 0; i < NumElevators; i++ {
+		if (*logPtr)[i].Id == "" && (*logPtr)[i].State == DEAD{
+			(*logPtr)[i] = elev
+			return
+		}
+	}
 }
 
-func GetLocalIndex(log orderhandler.ElevLog) int {
-	index = 0
-	for log[index].Id != localip.LocalIp() {
+func GetLogIndex(log orderhandler.ElevLog, ip string) int {
+	index := 0
+	for log[index].Id != ip {
 		index++
 	}
 	return index
 }
-
-// func MakeLogChannel(log orderhandler.ElevLog) chan orderhandler.ElevLog {
-// 	logChan := make(chan log)
-// 	return logChan
-// }
 
 func UpdateLog(logChan chan orderhandler.ElevLog, log* orderhandler.ElevLog) {
 	*log <- logChan
