@@ -174,6 +174,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			elevio.SetMotorDirection(dir)
 
 			newLogChan <- log
+			//orderhandler.SetLog(log)
 
 		case floor := <-drv_floors:
 			watchdog.Reset(ElevTimeout * time.Second)
@@ -220,6 +221,8 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				}
 			}
 			newLogChan <- log
+			//orderhandler.SetLog(log)
+
 		case <-watchdog.C:
 			log := orderhandler.GetLog()
 			if log[LogIndex].State == IDLE {
