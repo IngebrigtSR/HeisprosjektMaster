@@ -273,21 +273,25 @@ func AcceptOrders(log ElevLog) ElevLog {
 func ClearOrdersFloor(floor int, elevID int, log ElevLog) ElevLog {
 	elev := log[elevID]
 
-	switch S := elev.State; S {
-	case IDLE:
-		for b := 0; b < NumButtons; b++ {
-			elev.Orders[floor][b] = 0
-		}
-	case MOVING:
-		if elev.Orders[floor][elevio.BT_Cab] != 0 {
-			elev.Orders[floor][elevio.BT_Cab] = 0
-		}
-		if elev.Orders[floor][elevio.BT_HallUp] != 0 && elev.Dir == elevio.MD_Up {
-			elev.Orders[floor][elevio.BT_HallUp] = 0
-		}
-		if elev.Orders[floor][elevio.BT_HallDown] != 0 && elev.Dir == elevio.MD_Down {
-			elev.Orders[floor][elevio.BT_HallDown] = 0
-		}
+	// switch S := elev.State; S {
+	// case IDLE:
+	// 	for b := 0; b < NumButtons; b++ {
+	// 		elev.Orders[floor][b] = 0
+	// 	}
+	// case MOVING:
+	// 	if elev.Orders[floor][elevio.BT_Cab] != 0 {
+	// 		elev.Orders[floor][elevio.BT_Cab] = 0
+	// 	}
+	// 	if elev.Orders[floor][elevio.BT_HallUp] != 0 && elev.Dir == elevio.MD_Up {
+	// 		elev.Orders[floor][elevio.BT_HallUp] = 0
+	// 	}
+	// 	if elev.Orders[floor][elevio.BT_HallDown] != 0 && elev.Dir == elevio.MD_Down {
+	// 		elev.Orders[floor][elevio.BT_HallDown] = 0
+	// 	}
+	// }
+
+	for b := 0; b < NumButtons; b++ {
+		elev.Orders[floor][b] = 0
 	}
 
 	log[elevID] = elev
@@ -322,6 +326,13 @@ func PrintOrders(elevIndex int, log ElevLog) {
 		println()
 	}
 	println()
+}
+
+func PrintElev(elev Elevator) {
+	println("Elevator:")
+	println("Diraction: \t", elev.Dir)
+	println("State: \t", elev.State)
+	println("Floor: \t", elev.Floor)
 }
 
 func TestCost(log ElevLog) {

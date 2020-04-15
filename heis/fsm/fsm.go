@@ -80,38 +80,35 @@ func getDir(elev orderhandler.Elevator) elevio.MotorDirection {
 	return elevio.MotorDirection(-elev.Dir)
 }
 
-// func clearFloorOrders(floor int) {
-// 	for button := elevio.BT_HallUp; button <= elevio.BT_Cab; button++ {
-// 		activeOrders[floor][button] = false
-// 		elevio.SetButtonLamp(button, floor, false)
-// 	}
-// 	// printOrder()
-// }
-
-// func takeOrder(floor int, button elevio.ButtonType) {
-// 	activeOrders[floor][button] = true
-// 	elevio.SetButtonLamp(button, floor, true)
-// 	// printOrder()
-// }
-
 func updateButtonLights(log orderhandler.ElevLog) {
+
+	var lights [NumFloors][NumButtons]bool
+
 	for i := 0; i < NumElevators; i++ {
-		for b := 0; b < NumButtons-1; b++ {
-			for f := 0; f < NumFloors; f++ {
+		//Hall order lights
+		for f := 0; f < NumFloors; f++ {
+			for b := 0; b < NumButtons-1; b++ {
 				if log[i].Orders[f][b] == 2 {
-					elevio.SetButtonLamp(elevio.ButtonType(b), f, true)
-				} else {
-					elevio.SetButtonLamp(elevio.ButtonType(b), f, false)
+					lights[f][b] = true
 				}
 			}
 		}
+		//Cab order lights
 		if i == LogIndex {
 			for f := 0; f < NumFloors; f++ {
 				if log[i].Orders[f][2] == 2 {
-					elevio.SetButtonLamp(elevio.BT_Cab, f, true)
-				} else {
-					elevio.SetButtonLamp(elevio.BT_Cab, f, false)
+					lights[f][2] = true
 				}
+			}
+		}
+	}
+
+	for f := 0; f < NumFloors; f++ {
+		for b := 0; b < NumButtons-1; b++ {
+			if lights[f][b] {
+				elevio.SetButtonLamp(elevio.ButtonType(b), f, true)
+			} else {
+				elevio.SetButtonLamp(elevio.ButtonType(b), f, false)
 			}
 		}
 	}
@@ -161,11 +158,15 @@ func InitFSM(drv_floors chan int, localIndex int, newLogChan chan orderhandler.E
 //ElevFSM handles logic used to execute waiting orders and run the elevator
 func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool, newLogChan chan orderhandler.ElevLog) {
 
+	drv_obstr := make(chan bool)
+	drv_stop := make(chan bool)
+	go elevio.PollObstructionSwitch(drv_obstr)
+	go elevio.PollStopButton(drv_stop)
+
 	watchdog := time.NewTimer(ElevTimeout * time.Second)   //Timer to check for hardware malfunction
 	doorTimer := time.NewTimer(DoorOpenTime * time.Second) //Timer for closing door after opening
 	doorTimer.Stop()
 	for {
-		orderhandler.PrintOrders(0, orderhandler.GetLog())
 		select {
 
 		case order := <-drv_buttons:
@@ -254,6 +255,12 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			}
 			//newLogChan <- log
 			orderhandler.SetLog(log)
+
+		case <-drv_obstr:
+			orderhandler.PrintOrders(0, orderhandler.GetLog())
+
+		case <-drv_stop:
+			orderhandler.PrintElev(orderhandler.GetLog()[0])
 		}
 	}
 }
