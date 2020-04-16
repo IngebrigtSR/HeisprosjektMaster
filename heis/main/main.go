@@ -49,7 +49,7 @@ func main() {
 	}
 
 	//Network
-	networkmanager.InitNewElevator(&newLog)
+	networkmanager.InitNewElevator(&newLog, id)
 	logIndex := networkmanager.GetLogIndex(newLog, id)
 	println("Local index: \t ", logIndex)
 

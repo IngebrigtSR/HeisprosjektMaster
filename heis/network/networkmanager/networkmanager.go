@@ -6,9 +6,8 @@ import (
 	"../../orderhandler"
 )
 
-func InitNewElevator(logPtr *orderhandler.ElevLog) {
+func InitNewElevator(logPtr *orderhandler.ElevLog, id string) {
 	elev := orderhandler.Elevator{}
-	id := "Something"
 	elev.Id = id
 	elev.Dir = elevio.MD_Stop
 	elev.Floor = -1
