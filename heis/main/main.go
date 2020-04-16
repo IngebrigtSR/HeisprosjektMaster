@@ -8,7 +8,6 @@ import (
 	"../elevio"
 	"../fsm"
 	"../network/bcast"
-	"../network/localip"
 	"../network/networkmanager"
 	"../network/peers"
 	"../orderhandler"
@@ -20,8 +19,8 @@ func main() {
 	//Peers
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
-	localIP, _ := localip.LocalIP()
-	go peers.Transmitter(15647, localIP, peerTxEnable)
+	id := "Something"
+	go peers.Transmitter(15647, id, peerTxEnable)
 	go peers.Receiver(15647, peerUpdateCh)
 
 	var newLog orderhandler.ElevLog
@@ -32,6 +31,10 @@ func main() {
 	go bcast.Receiver(16569, logRx)
 
 	p := <-peerUpdateCh
+	fmt.Println("Peers:")
+	for i := 0; i < len(p.Peers); i++ {
+		fmt.Println(p.Peers[i])
+	}
 	if len(p.Peers) == 1 {
 		newLog = orderhandler.MakeEmptyLog()
 	} else {
@@ -40,7 +43,7 @@ func main() {
 
 	//Network
 	networkmanager.InitNewElevator(&newLog)
-	localIndex := networkmanager.GetLogIndex(newLog, localIP)
+	localIndex := networkmanager.GetLogIndex(newLog, id)
 	println("Local index: \t ", localIndex)
 
 	elevio.Init("localhost:15657", NumFloors)
