@@ -52,6 +52,7 @@ func main() {
 	drv_floors := make(chan int)
 	startUp := make(chan bool)
 	logFromFSM := make(chan orderhandler.ElevLog)
+	deadElev := make(chan int)
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
@@ -63,7 +64,7 @@ func main() {
 
 	orderhandler.TestCost(newLog)
 
-	transmitter := time.NewTicker(1000 * time.Millisecond)
+	transmitter := time.NewTicker(10 * time.Millisecond)
 	//timer := time.NewTimer(5 * time.Second)
 	transmit := false
 	count := 0
@@ -103,6 +104,9 @@ func main() {
 				}
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
+
+		case dead := <-deadElev:
+			println(dead)
 
 		}
 

@@ -15,8 +15,6 @@ const (
 	// LogBCPort = 20000
 )
 
-var ()
-
 type State int
 
 const (
