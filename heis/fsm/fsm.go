@@ -82,7 +82,7 @@ func getDir(elev orderhandler.Elevator) elevio.MotorDirection {
 	return elevio.MotorDirection(-elev.Dir)
 }
 
-func updateButtonLights(log orderhandler.ElevLog) {
+func UpdateButtonLights(log orderhandler.ElevLog) {
 
 	var lights [NumFloors][NumButtons]bool
 
@@ -205,9 +205,9 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				}
 			}
 
-			updateButtonLights(log)
-			//newLogChan <- log
-			orderhandler.SetLog(log)
+			newLogChan <- log
+			// UpdateButtonLights(log)
+			//orderhandler.SetLog(log)
 
 		case floor := <-drv_floors:
 			watchdog.Reset(ElevTimeout * time.Second)
@@ -227,9 +227,9 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				log[LogIndex].State = DOOROPEN
 			}
 
-			updateButtonLights(log)
-			//newLogChan <- log
-			orderhandler.SetLog(log)
+			newLogChan <- log
+			// UpdateButtonLights(log)
+			// orderhandler.SetLog(log)
 
 		case <-doorTimer.C:
 			log := orderhandler.GetLog()
@@ -243,13 +243,14 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			} else {
 				log[LogIndex].State = IDLE
 			}
-			updateButtonLights(log)
-			//newLogChan <- log
-			orderhandler.SetLog(log)
+
+			newLogChan <- log
+
+			// UpdateButtonLights(log)
+			// orderhandler.SetLog(log)
 
 		case <-startUp: //Detects if main recieves new log from Network (only needed to get Elev out of IDLE)
 			log := orderhandler.GetLog()
-			updateButtonLights(log)
 
 			if log[LogIndex].State == IDLE {
 
@@ -261,8 +262,10 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 					log[LogIndex].State = MOVING
 				}
 			}
-			//newLogChan <- log
-			orderhandler.SetLog(log)
+
+			newLogChan <- log
+			// UpdateButtonLights(log)
+			// orderhandler.SetLog(log)
 
 		case <-watchdog.C:
 			log := orderhandler.GetLog()
@@ -271,8 +274,9 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			} else {
 				log[LogIndex].State = DEAD
 			}
-			//newLogChan <- log
-			orderhandler.SetLog(log)
+
+			newLogChan <- log
+			// orderhandler.SetLog(log)
 
 		case <-drv_obstr:
 			orderhandler.PrintOrders(0, orderhandler.GetLog())

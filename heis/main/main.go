@@ -30,6 +30,7 @@ func main() {
 	logRx := make(chan orderhandler.ElevLog)
 	go bcast.Transmitter(16569, logTx)
 	go bcast.Receiver(16569, logRx)
+
 	p := <-peerUpdateCh
 	if len(p.Peers) == 1 {
 		newLog = orderhandler.MakeEmptyLog()
@@ -60,25 +61,34 @@ func main() {
 	orderhandler.TestCost(newLog)
 
 	transmitter := time.NewTicker(1000 * time.Millisecond)
-	timer := time.NewTimer(5 * time.Second)
+	//timer := time.NewTimer(5 * time.Second)
 	transmit := false
 	count := 0
 	for {
 		select {
 
-		case <-timer.C:
-			println("walla walla bing bang")
+		case newLog = <-logRx:
+			orderhandler.SetLog(newLog)
+			fsm.UpdateButtonLights(newLog)
+			startUp <- true
+			println("Recieved something")
 
 		case <-transmitter.C:
 			if transmit {
+				logTx <- orderhandler.GetLog()
+				println(count)
 				count++
-				println("transmitted: \t", count)
+				transmit = false
 			}
+
 		case updatedLog := <-logFromFSM:
-			orderhandler.SetLog(updatedLog)
 			if updatedLog != orderhandler.GetLog() {
 				transmit = true
 			}
+
+			fsm.UpdateButtonLights(updatedLog)
+
+			orderhandler.SetLog(updatedLog)
 
 		case p := <-peerUpdateCh:
 			if len(p.Lost) != 0 {
@@ -90,7 +100,6 @@ func main() {
 				}
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
-		case newLog = <-logRx:
 
 		}
 
