@@ -23,11 +23,12 @@ func InitNewElevator(logPtr *orderhandler.ElevLog) {
 
 //GetLogIndex returns the index of the elevator
 func GetLogIndex(log orderhandler.ElevLog, id string) int {
-	index := 0
-	for log[index].Id != id {
-		index++
+	for index := 0; index < len(log); index++ {
+		if log[index].Id == id {
+			return index
+		}
 	}
-	return index
+	return -1
 }
 
 func UpdateLog(logChan chan orderhandler.ElevLog, log *orderhandler.ElevLog) {

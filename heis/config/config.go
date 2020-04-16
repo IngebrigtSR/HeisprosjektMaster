@@ -8,14 +8,17 @@ const (
 	DoorOpenTime = 3  //sec
 	ElevTimeout  = 20 //sec
 
-	LogIndex = 0
 
 	//Div porter for kommunikajson osv
 
 	// LogBCPort = 20000
 )
 
-var ()
+
+var (
+	LogIndex = 0
+
+)
 
 type State int
 
