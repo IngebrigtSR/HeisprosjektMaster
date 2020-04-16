@@ -175,6 +175,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			log := orderhandler.GetLog()
 			fmt.Printf("Order:\t%+v\n", order)
 
+			//Locally executes any orders on the same floor as Elevator
 			if log[LogIndex].Floor == order.Floor {
 				if log[LogIndex].State == DOOROPEN {
 					doorTimer.Reset(DoorOpenTime * time.Second)
@@ -190,6 +191,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				dir := getDir(log[LogIndex])
 				log[LogIndex].Dir = dir
 
+				//To prevent Elev from moving with the door open
 				if log[LogIndex].State != DOOROPEN {
 					elevio.SetMotorDirection(dir)
 				}
