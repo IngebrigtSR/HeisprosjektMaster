@@ -84,8 +84,8 @@ func updateButtonLights(log orderhandler.ElevLog) {
 
 	var lights [NumFloors][NumButtons]bool
 
+	//Hall order lights
 	for i := 0; i < NumElevators; i++ {
-		//Hall order lights
 		for f := 0; f < NumFloors; f++ {
 			for b := 0; b < NumButtons-1; b++ {
 				if log[i].Orders[f][b] == 2 {
@@ -93,18 +93,18 @@ func updateButtonLights(log orderhandler.ElevLog) {
 				}
 			}
 		}
-		//Cab order lights
-		if i == LogIndex {
-			for f := 0; f < NumFloors; f++ {
-				if log[i].Orders[f][2] == 2 {
-					lights[f][2] = true
-				}
-			}
+	}
+
+	//Cab order lights
+	for f := 0; f < NumFloors; f++ {
+		if log[LogIndex].Orders[f][2] == 2 {
+			lights[f][2] = true
 		}
 	}
 
+	//Setting all light values
 	for f := 0; f < NumFloors; f++ {
-		for b := 0; b < NumButtons-1; b++ {
+		for b := 0; b < NumButtons; b++ {
 			if lights[f][b] {
 				elevio.SetButtonLamp(elevio.ButtonType(b), f, true)
 			} else {
@@ -175,16 +175,30 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			log := orderhandler.GetLog()
 			fmt.Printf("Order:\t%+v\n", order)
 
-			log = orderhandler.DistributeOrder(order, log)
-
-			dir := getDir(log[LogIndex])
-			log[LogIndex].Dir = dir
-			elevio.SetMotorDirection(dir)
-
-			if dir != elevio.MD_Stop {
-				log[LogIndex].State = MOVING
+			if log[LogIndex].Floor == order.Floor {
+				if log[LogIndex].State == DOOROPEN {
+					doorTimer.Reset(DoorOpenTime * time.Second)
+				}
+				if log[LogIndex].State == IDLE {
+					elevio.SetDoorOpenLamp(true)
+					doorTimer.Reset(DoorOpenTime * time.Second)
+					log[LogIndex].State = DOOROPEN
+				}
 			} else {
-				log[LogIndex].State = IDLE
+				log = orderhandler.DistributeOrder(order, log)
+
+				dir := getDir(log[LogIndex])
+				log[LogIndex].Dir = dir
+
+				if log[LogIndex].State != DOOROPEN {
+					elevio.SetMotorDirection(dir)
+				}
+
+				if dir == elevio.MD_Stop {
+					log[LogIndex].State = IDLE
+				} else {
+					log[LogIndex].State = MOVING
+				}
 			}
 
 			updateButtonLights(log)
@@ -218,8 +232,8 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 
 			elevio.SetDoorOpenLamp(false)
 			dir := getDir(log[LogIndex])
-			elevio.SetMotorDirection(dir)
 			log[LogIndex].Dir = dir
+			elevio.SetMotorDirection(dir)
 			if dir != elevio.MD_Stop {
 				log[LogIndex].State = MOVING
 			} else {
