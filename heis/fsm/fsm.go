@@ -60,6 +60,7 @@ func getDir(elev orderhandler.Elevator) elevio.MotorDirection {
 	if !anyActiveOrders(elev) {
 		return elevio.MD_Stop
 	}
+
 	if elev.Dir == elevio.MD_Stop {
 		for f := 0; f < NumFloors; f++ {
 			for b := 0; b < NumButtons; b++ {
@@ -77,6 +78,7 @@ func getDir(elev orderhandler.Elevator) elevio.MotorDirection {
 	if orderhandler.OrdersInFront(elev) {
 		return elevio.MotorDirection(elev.Dir)
 	}
+	//Turns around if there are no orders in front of Elevator
 	return elevio.MotorDirection(-elev.Dir)
 }
 
