@@ -14,12 +14,15 @@ const (
 	// LogBCPort = 20000
 )
 
+<<<<<<< HEAD
 
 var (
 	LogIndex = 0
 
 )
 
+=======
+>>>>>>> 62c59676490423b5ad999f18f0f3366e59620c3b
 type State int
 
 const (
