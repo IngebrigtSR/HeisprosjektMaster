@@ -43,6 +43,7 @@ func main() {
 			peerInitDone = true
 		}
 	}
+
 	if len(p.Peers) == 1 {
 		newLog = orderhandler.MakeEmptyLog()
 		fmt.Println("No other peers on network. Created a new empty log")
@@ -73,7 +74,6 @@ func main() {
 	transmitter := time.NewTicker(10 * time.Millisecond)
 	//timer := time.NewTimer(5 * time.Second)
 	transmit := false
-	count := 0
 	for {
 		select {
 
@@ -84,13 +84,12 @@ func main() {
 
 			fsm.UpdateButtonLights(newLog)
 			startUp <- true
-			println("Recieved something")
+			println("Recieved new log")
 
 		case <-transmitter.C:
 			if transmit {
 				logTx <- orderhandler.GetLog()
-				println(count)
-				count++
+				println("Broadcasted log")
 				transmit = false
 			}
 

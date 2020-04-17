@@ -160,19 +160,19 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 
-	watchdog := time.NewTimer(ElevTimeout * time.Second)   //Timer to check for hardware malfunction
+	motorTimer := time.NewTimer(ElevTimeout * time.Second) //Timer to check for motor malfunction
 	doorTimer := time.NewTimer(DoorOpenTime * time.Second) //Timer for closing door after opening
 	doorTimer.Stop()
 	for {
 		select {
 
 		case order := <-drv_buttons:
-			watchdog.Reset(ElevTimeout * time.Second)
+			//watchdog.Reset(ElevTimeout * time.Second)
 
 			log := orderhandler.GetLog()
 			fmt.Printf("Order:\t%+v\n", order)
 
-			//Locally executes any orders on the same floor as Elevator
+			//Locally executes any recieved orders if Elevator is standing stil on same floor
 			if log[LogIndex].Floor == order.Floor && log[LogIndex].State != MOVING {
 				if log[LogIndex].State == DOOROPEN {
 					doorTimer.Reset(DoorOpenTime * time.Second)
@@ -188,15 +188,14 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				dir := getDir(log[LogIndex])
 				log[LogIndex].Dir = dir
 
-				//To prevent Elev from moving with the door open
-				if log[LogIndex].State != DOOROPEN {
+				//To prevent Elev from moving with the door open or dead hardware
+				if log[LogIndex].State != DOOROPEN && log[LogIndex].State != DEAD {
+					if dir == elevio.MD_Stop {
+						log[LogIndex].State = IDLE
+					} else {
+						log[LogIndex].State = MOVING
+					}
 					elevio.SetMotorDirection(dir)
-				}
-
-				if dir == elevio.MD_Stop {
-					log[LogIndex].State = IDLE
-				} else {
-					log[LogIndex].State = MOVING
 				}
 			}
 
@@ -205,7 +204,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			//orderhandler.SetLog(log)
 
 		case floor := <-drv_floors:
-			watchdog.Reset(ElevTimeout * time.Second)
+			motorTimer.Reset(ElevTimeout * time.Second)
 
 			fmt.Printf("Floor:\t%+v\n", floor)
 			elevio.SetFloorIndicator(floor)
@@ -217,9 +216,10 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				log = orderhandler.ClearOrdersFloor(floor, LogIndex, log)
 				elevio.SetMotorDirection(elevio.MD_Stop)
 
-				elevio.SetDoorOpenLamp(true)
 				doorTimer.Reset(DoorOpenTime * time.Second)
 				log[LogIndex].State = DOOROPEN
+				elevio.SetDoorOpenLamp(true)
+
 			}
 
 			newLogChan <- log
@@ -229,15 +229,17 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 		case <-doorTimer.C:
 			log := orderhandler.GetLog()
 
-			elevio.SetDoorOpenLamp(false)
 			dir := getDir(log[LogIndex])
 			log[LogIndex].Dir = dir
-			elevio.SetMotorDirection(dir)
-			if dir != elevio.MD_Stop {
-				log[LogIndex].State = MOVING
-			} else {
+
+			if dir == elevio.MD_Stop {
 				log[LogIndex].State = IDLE
+			} else {
+				log[LogIndex].State = MOVING
 			}
+
+			elevio.SetDoorOpenLamp(false)
+			elevio.SetMotorDirection(dir)
 
 			newLogChan <- log
 
@@ -259,15 +261,14 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			}
 
 			newLogChan <- log
-			// UpdateButtonLights(log)
-			// orderhandler.SetLog(log)
 
-		case <-watchdog.C:
+		case <-motorTimer.C:
 			log := orderhandler.GetLog()
 			if log[LogIndex].State == IDLE {
-				watchdog.Reset(ElevTimeout * time.Second)
+				motorTimer.Reset(ElevTimeout * time.Second)
 			} else {
 				log[LogIndex].State = DEAD
+				println("I DIED :'(")
 			}
 
 			newLogChan <- log
