@@ -28,20 +28,11 @@ func shouldStop(elev orderhandler.Elevator, floor int) bool {
 	if elev.Floor == 0 || elev.Floor == NumFloors-1 {
 		return true
 	}
-	// if elev.Orders[floor][elevio.BT_HallUp] != 0 && elev.Dir == elevio.MD_Up {
-	// 	return true
-	// }
-	// if elev.Orders[floor][elevio.BT_HallDown] != 0 && elev.Dir == elevio.MD_Down {
-	// 	return true
-	// }
-	// if elev.Orders[floor][elevio.BT_Cab] != 0 {
-	// 	return true
-	// }
 	if orderhandler.OrdersOnFloor(floor, elev) {
 		return true
 	}
 	if !orderhandler.OrdersInFront(elev) {
-		if elev.Orders[floor][elevio.BT_HallUp] == 2 || elev.Orders[elev.Floor][elevio.BT_HallDown] == 2 {
+		if elev.Orders[floor][elevio.BT_HallUp] == Accepted || elev.Orders[elev.Floor][elevio.BT_HallDown] == Accepted {
 			return true
 		}
 	}
