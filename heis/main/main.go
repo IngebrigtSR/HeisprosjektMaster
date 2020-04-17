@@ -68,9 +68,10 @@ func main() {
 	go elevio.PollFloorSensor(drv_floors)
 
 	fsm.InitFSM(drv_floors, LogIndex, logFromFSM)
-	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM, deadElev)
 
-	orderhandler.TestCost(newLog)
+	logTx <- orderhandler.GetLog()
+
+	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM, deadElev)
 
 	transmitter := time.NewTicker(10 * time.Millisecond)
 	//timer := time.NewTimer(5 * time.Second)
