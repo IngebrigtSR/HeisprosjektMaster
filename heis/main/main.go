@@ -68,6 +68,11 @@ func main() {
 	go elevio.PollFloorSensor(drv_floors)
 
 	fsm.InitFSM(drv_floors, LogIndex, logFromFSM)
+<<<<<<< HEAD
+=======
+	logTx <- orderhandler.GetLog()
+	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM, deadElev)
+>>>>>>> fd8a5a4d5c391851cfdd88dc3387cd39d4cf8f6a
 
 	logTx <- orderhandler.GetLog()
 
