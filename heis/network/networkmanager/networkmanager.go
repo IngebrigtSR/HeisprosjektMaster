@@ -6,9 +6,8 @@ import (
 	"../../orderhandler"
 )
 
-func InitNewElevator(logPtr *orderhandler.ElevLog) {
+func InitNewElevator(logPtr *orderhandler.ElevLog, id string) {
 	elev := orderhandler.Elevator{}
-	id := "Something"
 	elev.Id = id
 	elev.Dir = elevio.MD_Stop
 	elev.Floor = -1
@@ -23,11 +22,12 @@ func InitNewElevator(logPtr *orderhandler.ElevLog) {
 
 //GetLogIndex returns the index of the elevator
 func GetLogIndex(log orderhandler.ElevLog, id string) int {
-	index := 0
-	for log[index].Id != id {
-		index++
+	for index := 0; index < len(log); index++ {
+		if log[index].Id == id {
+			return index
+		}
 	}
-	return index
+	return -1
 }
 
 func UpdateLog(logChan chan orderhandler.ElevLog, log *orderhandler.ElevLog) {

@@ -31,20 +31,27 @@ func main() {
 	go bcast.Receiver(16569, logRx)
 
 	p := <-peerUpdateCh
-	fmt.Println("Peers:")
-	for i := 0; i < len(p.Peers); i++ {
-		fmt.Println(p.Peers[i])
+	timer := time.NewTimer(5 * time.Second)
+	peerInitDone := false
+	for !peerInitDone {
+		select{
+		case p = <- peerUpdateCh:
+		case <- timer.C:
+			peerInitDone = true
+		}
 	}
 	if len(p.Peers) == 1 {
 		newLog = orderhandler.MakeEmptyLog()
+		fmt.Println("No other peers on network. Created a new empty log")
 	} else {
-		newLog = <-logRx
+		newLog = <- logRx
+		fmt.Println("Found other peer(s) on the network! Copied the already existing log")
 	}
 
 	//Network
-	networkmanager.InitNewElevator(&newLog)
-	localIndex := networkmanager.GetLogIndex(newLog, id)
-	println("Local index: \t ", localIndex)
+	networkmanager.InitNewElevator(&newLog, id)
+	logIndex := networkmanager.GetLogIndex(newLog, id)
+	println("Local index: \t ", logIndex)
 
 	elevio.Init("localhost:15657", NumFloors)
 
@@ -57,10 +64,10 @@ func main() {
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 
-	fsm.InitFSM(drv_floors, localIndex, logFromFSM)
+	fsm.InitFSM(drv_floors, logIndex, logFromFSM)
 	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM)
 
-	// elev := log[localIndex]
+	// elev := log[logIndex]
 
 	orderhandler.TestCost(newLog)
 
@@ -98,9 +105,10 @@ func main() {
 
 			orderhandler.SetLog(updatedLog)
 
-		case p := <-peerUpdateCh:
+		case p = <-peerUpdateCh:
 			if len(p.Lost) != 0 {
 				for i := 0; i < len(p.Lost); i++ {
+					fmt.Println(p.Lost[i])
 					lostID := p.Lost[i]
 					deadElevIndex := networkmanager.GetLogIndex(newLog, lostID)
 					newLog = orderhandler.ReAssignOrders(newLog, deadElevIndex)
@@ -108,6 +116,10 @@ func main() {
 				}
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
+			for i := 0; i < len(p.Peers); i++ {
+				fmt.Println(p.Peers[i])
+			}
+			
 
 		case dead := <-deadElev:
 			println(dead)
