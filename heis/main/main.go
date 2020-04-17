@@ -72,7 +72,10 @@ func main() {
 		select {
 
 		case newLog = <-logRx:
+
+			newLog = orderhandler.AcceptOrders(newLog)
 			orderhandler.SetLog(newLog)
+
 			fsm.UpdateButtonLights(newLog)
 			startUp <- true
 			println("Recieved something")
@@ -86,6 +89,7 @@ func main() {
 			}
 
 		case updatedLog := <-logFromFSM:
+
 			if updatedLog != orderhandler.GetLog() {
 				transmit = true
 			}
