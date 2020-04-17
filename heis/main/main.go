@@ -30,7 +30,7 @@ func main() {
 	go bcast.Transmitter(16569, logTx)
 	go bcast.Receiver(16569, logRx)
 
-	p := <-peerUpdateCh
+	var p peers.PeerUpdate
 	timer := time.NewTimer(5 * time.Second)
 	peerInitDone := false
 	for !peerInitDone {
@@ -102,18 +102,44 @@ func main() {
 			orderhandler.SetLog(updatedLog)
 
 		case p = <-peerUpdateCh:
+			
 			if len(p.Lost) != 0 {
+				fmt.Println("LOST:")
 				for i := 0; i < len(p.Lost); i++ {
 					fmt.Println(p.Lost[i])
 					lostID := p.Lost[i]
 					deadElevIndex := networkmanager.GetLogIndex(newLog, lostID)
-					newLog = orderhandler.ReAssignOrders(newLog, deadElevIndex)
-					newLog[deadElevIndex].State = DEAD
+					if deadElevIndex != -1 {
+						fmt.Println("Log index for the lost elevator:", deadElevIndex)
+						newLog = orderhandler.ReAssignOrders(newLog, deadElevIndex)
+						newLog[deadElevIndex].State = DEAD
+					} else {
+						fmt.Println("Did not find the lost elevator in the log")
+					}
+					
 				}
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
+			fmt.Println("PEERS:")
 			for i := 0; i < len(p.Peers); i++ {
 				fmt.Println(p.Peers[i])
+			}
+			fmt.Println("IDS:")
+			for i := 0; i < NumElevators; i++ {
+				fmt.Println(newLog[i].Id)
+			}
+			
+			if len(p.New) != 0 {
+				fmt.Println("NEW:")
+				fmt.Println(p.New)
+				newID := p.New
+				newElevIndex := networkmanager.GetLogIndex(newLog, newID)
+				if newElevIndex != -1 {
+					// newLog[newElevIndex].State = 
+					fmt.Println("Log index for the new elevator:", newElevIndex)
+				} else {
+					fmt.Println("Did not find the new elevator in the log")
+				}
 			}
 			
 
