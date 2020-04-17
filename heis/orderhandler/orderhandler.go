@@ -131,73 +131,6 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 	return cost
 }
 
-func oldCost(order elevio.ButtonEvent, elevator Elevator) int {
-	//Passing floor = +1
-	//Stopping at floor = +2
-
-	elev := elevator //copy of elevator to simulate movement for cost calculation
-	cost := 0        //Init value for cost
-
-	switch S := elev.State; S {
-	case DEAD:
-		cost = math.MaxInt32
-	case INIT:
-		cost = math.MaxInt32
-	case IDLE:
-		cost = int(math.Abs(float64(elev.Floor - order.Floor))) //#floors between new order and elevator
-	default:
-		startFloor := elev.Floor
-		println(startFloor)
-
-		//Cost of orders and floors in direction of travel
-		for 0 <= elev.Floor && elev.Floor < NumFloors {
-			if elev.Floor == order.Floor {
-				return cost
-			} else if OrdersOnFloor(elev.Floor, elev) {
-				cost += 2
-			} else {
-				cost++
-			}
-
-			if !OrdersInFront(elev) {
-				break
-			}
-
-			elev.Floor += int(elev.Dir)
-		}
-		//Adding cost of traveling back to "start"
-		cost += int(math.Abs(float64(startFloor - elev.Floor)))
-
-		//Turn elevator around and move to next floor
-		elev.Dir = elevio.MotorDirection(-int(elev.Dir))
-		elev.Floor = startFloor + int(elev.Dir)
-
-		//Cost of orders and floors in oppsite direction
-		for 0 <= elev.Floor && elev.Floor < NumFloors {
-			println(elev.Floor)
-			if elev.Floor == order.Floor {
-				return cost
-			} else if OrdersOnFloor(elev.Floor, elev) {
-				cost += 2
-			} else {
-				cost++
-			}
-
-			if !OrdersInFront(elev) {
-				break
-			}
-
-			elev.Floor += int(elev.Dir)
-		}
-
-		//Adding 1 if elevator is currently executing an order
-		if elev.State == DOOROPEN {
-			cost++
-		}
-	}
-	return cost
-}
-
 func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 	cheapestElev := -1
 	cheapestCost := 10000
@@ -229,7 +162,7 @@ func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
 	return log
 }
 
-//ReAssignOrders reassigns dead elevator orders to other elevators
+//ReAssignOrders reassigns hall orders from a Dead elevator to the others
 func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 	if log[deadElev].State == DEAD {
 		for f := 0; f < NumFloors; f++ {
@@ -279,6 +212,16 @@ func ClearOrdersFloor(floor int, elevID int, log ElevLog) ElevLog {
 	return log
 }
 
+//DetectDead checks a log for any dead elevators and returns the dead index
+func DetectDead(log ElevLog) int {
+	for i := 0; i < NumElevators; i++ {
+		if log[i].State == DEAD {
+			return i
+		}
+	}
+	return -1
+}
+
 //MakeEmptyLog creates an empty ElevLog
 func MakeEmptyLog() ElevLog {
 	var log [NumElevators]Elevator
@@ -312,8 +255,8 @@ func PrintOrders(elevIndex int, log ElevLog) {
 
 //PrintElev print a given elevator to terminal
 func PrintElev(elev Elevator) {
-	println("Elevator:")
-	println("Diraction: \t", elev.Dir)
+	println("Elevator:\t", elev.Id)
+	println("Direction: \t", elev.Dir)
 	println("State: \t", elev.State)
 	println("Floor: \t", elev.Floor)
 }
@@ -338,3 +281,70 @@ func TestCost(log ElevLog) {
 	fmt.Println("New cost fun: \t", cost2)
 
 }
+
+// func oldCost(order elevio.ButtonEvent, elevator Elevator) int {
+// 	//Passing floor = +1
+// 	//Stopping at floor = +2
+
+// 	elev := elevator //copy of elevator to simulate movement for cost calculation
+// 	cost := 0        //Init value for cost
+
+// 	switch S := elev.State; S {
+// 	case DEAD:
+// 		cost = math.MaxInt32
+// 	case INIT:
+// 		cost = math.MaxInt32
+// 	case IDLE:
+// 		cost = int(math.Abs(float64(elev.Floor - order.Floor))) //#floors between new order and elevator
+// 	default:
+// 		startFloor := elev.Floor
+// 		println(startFloor)
+
+// 		//Cost of orders and floors in direction of travel
+// 		for 0 <= elev.Floor && elev.Floor < NumFloors {
+// 			if elev.Floor == order.Floor {
+// 				return cost
+// 			} else if OrdersOnFloor(elev.Floor, elev) {
+// 				cost += 2
+// 			} else {
+// 				cost++
+// 			}
+
+// 			if !OrdersInFront(elev) {
+// 				break
+// 			}
+
+// 			elev.Floor += int(elev.Dir)
+// 		}
+// 		//Adding cost of traveling back to "start"
+// 		cost += int(math.Abs(float64(startFloor - elev.Floor)))
+
+// 		//Turn elevator around and move to next floor
+// 		elev.Dir = elevio.MotorDirection(-int(elev.Dir))
+// 		elev.Floor = startFloor + int(elev.Dir)
+
+// 		//Cost of orders and floors in oppsite direction
+// 		for 0 <= elev.Floor && elev.Floor < NumFloors {
+// 			println(elev.Floor)
+// 			if elev.Floor == order.Floor {
+// 				return cost
+// 			} else if OrdersOnFloor(elev.Floor, elev) {
+// 				cost += 2
+// 			} else {
+// 				cost++
+// 			}
+
+// 			if !OrdersInFront(elev) {
+// 				break
+// 			}
+
+// 			elev.Floor += int(elev.Dir)
+// 		}
+
+// 		//Adding 1 if elevator is currently executing an order
+// 		if elev.State == DOOROPEN {
+// 			cost++
+// 		}
+// 	}
+// 	return cost
+// }

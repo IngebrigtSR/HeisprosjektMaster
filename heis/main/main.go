@@ -54,6 +54,7 @@ func main() {
 
 	networkmanager.InitNewElevator(&newLog, id)
 	logIndex := networkmanager.GetLogIndex(newLog, id)
+	orderhandler.SetLog(newLog)
 	println("Local index: \t ", logIndex)
 
 	//FSM
@@ -81,6 +82,8 @@ func main() {
 
 			newLog = orderhandler.AcceptOrders(newLog)
 			orderhandler.SetLog(newLog)
+
+			deadElev <- orderhandler.DetectDead(newLog)
 
 			fsm.UpdateButtonLights(newLog)
 			startUp <- true
@@ -118,7 +121,6 @@ func main() {
 					} else {
 						fmt.Println("Did not find the lost elevator in the log")
 					}
-
 				}
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
@@ -145,9 +147,13 @@ func main() {
 			}
 
 		case dead := <-deadElev:
-			println(dead)
-
+			if dead != -1 {
+				log := orderhandler.GetLog()
+				log = orderhandler.ReAssignOrders(log, dead)
+				if log != orderhandler.GetLog() {
+					transmit = true
+				}
+			}
 		}
-
 	}
 }
