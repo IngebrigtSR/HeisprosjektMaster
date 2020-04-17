@@ -69,15 +69,17 @@ func OrdersInFront(elev Elevator) bool {
 	return false
 }
 
-//Checks if an elevator has orders on a given floor, used to for calculations in cost function
+//OrdersOnFloor check if an elevator has accepted orders on a given floor
 func OrdersOnFloor(floor int, elev Elevator) bool {
+
+	cabOrder := (elev.Orders[floor][int(elevio.BT_Cab)] == Accepted)
 
 	switch d := elev.Dir; d {
 	case elevio.MD_Down:
-		return elev.Orders[floor][int(elevio.BT_HallDown)] == Accepted
+		return elev.Orders[floor][int(elevio.BT_HallDown)] == Accepted || cabOrder
 
 	case elevio.MD_Up:
-		return elev.Orders[floor][int(elevio.BT_HallUp)] == Accepted
+		return elev.Orders[floor][int(elevio.BT_HallUp)] == Accepted || cabOrder
 
 	case elevio.MD_Stop:
 		for b := 0; b < NumButtons; b++ {
@@ -86,6 +88,7 @@ func OrdersOnFloor(floor int, elev Elevator) bool {
 			}
 		}
 	}
+
 	return false
 }
 
