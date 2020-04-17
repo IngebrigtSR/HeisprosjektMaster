@@ -274,10 +274,10 @@ func TestCost(log ElevLog) {
 
 	testOrder := elevio.ButtonEvent{Floor: 3, Button: elevio.BT_Cab}
 
-	cost1 := oldCost(testOrder, elev)
+	//cost1 := oldCost(testOrder, elev)
 	cost2 := getCost(testOrder, elev)
 
-	fmt.Println("Old cost fun: \t", cost1)
+	//fmt.Println("Old cost fun: \t", cost1)
 	fmt.Println("New cost fun: \t", cost2)
 
 }
