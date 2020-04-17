@@ -148,12 +148,10 @@ func InitFSM(drv_floors chan int, localIndex int, newLogChan chan orderhandler.E
 
 	log[localIndex] = elev
 	orderhandler.SetLog(log)
-
-	//newLogChan <- log
 }
 
 //ElevFSM handles logic used to execute waiting orders and run the elevator
-func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool, newLogChan chan orderhandler.ElevLog) {
+func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool, newLogChan chan orderhandler.ElevLog, deadElev chan int) {
 
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
@@ -249,6 +247,8 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 		case <-startUp: //Detects if main recieves new log from Network (only needed to get Elev out of IDLE)
 			log := orderhandler.GetLog()
 
+			deadElev <- orderhandler.DetectDead(log)
+
 			if log[LogIndex].State == IDLE {
 
 				dir := getDir(log[LogIndex])
@@ -275,10 +275,10 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			// orderhandler.SetLog(log)
 
 		case <-drv_obstr:
-			orderhandler.PrintOrders(0, orderhandler.GetLog())
+			orderhandler.PrintOrders(LogIndex, orderhandler.GetLog())
 
 		case <-drv_stop:
-			orderhandler.PrintElev(orderhandler.GetLog()[0])
+			orderhandler.PrintElev(orderhandler.GetLog()[LogIndex])
 		}
 	}
 }

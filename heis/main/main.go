@@ -53,9 +53,9 @@ func main() {
 	}
 
 	networkmanager.InitNewElevator(&newLog, id)
-	logIndex := networkmanager.GetLogIndex(newLog, id)
+	LogIndex = networkmanager.GetLogIndex(newLog, id)
 	orderhandler.SetLog(newLog)
-	println("Local index: \t ", logIndex)
+	println("Local index: \t ", LogIndex)
 
 	//FSM
 	drv_buttons := make(chan elevio.ButtonEvent)
@@ -67,8 +67,8 @@ func main() {
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 
-	fsm.InitFSM(drv_floors, logIndex, logFromFSM)
-	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM)
+	fsm.InitFSM(drv_floors, LogIndex, logFromFSM)
+	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM, deadElev)
 
 	orderhandler.TestCost(newLog)
 
@@ -82,8 +82,6 @@ func main() {
 
 			newLog = orderhandler.AcceptOrders(newLog)
 			orderhandler.SetLog(newLog)
-
-			deadElev <- orderhandler.DetectDead(newLog)
 
 			fsm.UpdateButtonLights(newLog)
 			startUp <- true
