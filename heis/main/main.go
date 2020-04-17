@@ -16,27 +16,33 @@ import (
 func main() {
 	fmt.Println("Hello World")
 
-	//Peers
-	peerUpdateCh := make(chan peers.PeerUpdate)
-	peerTxEnable := make(chan bool)
-	id := "Something"
-	go peers.Transmitter(15647, id, peerTxEnable)
-	go peers.Receiver(15647, peerUpdateCh)
-
+	elevio.Init("localhost:15657", NumFloors)
 	var newLog orderhandler.ElevLog
+
+	//Network & Peers
 
 	logTx := make(chan orderhandler.ElevLog)
 	logRx := make(chan orderhandler.ElevLog)
 	go bcast.Transmitter(16569, logTx)
 	go bcast.Receiver(16569, logRx)
 
+<<<<<<< HEAD
 	var p peers.PeerUpdate
+=======
+	id := "Something"
+	peerUpdateCh := make(chan peers.PeerUpdate)
+	peerTxEnable := make(chan bool)
+	go peers.Transmitter(15647, id, peerTxEnable)
+	go peers.Receiver(15647, peerUpdateCh)
+
+	p := <-peerUpdateCh
+>>>>>>> ae4a35bd8e239a09bc53d9afc21bde5463c9e3bd
 	timer := time.NewTimer(5 * time.Second)
 	peerInitDone := false
 	for !peerInitDone {
-		select{
-		case p = <- peerUpdateCh:
-		case <- timer.C:
+		select {
+		case p = <-peerUpdateCh:
+		case <-timer.C:
 			peerInitDone = true
 		}
 	}
@@ -44,17 +50,15 @@ func main() {
 		newLog = orderhandler.MakeEmptyLog()
 		fmt.Println("No other peers on network. Created a new empty log")
 	} else {
-		newLog = <- logRx
+		newLog = <-logRx
 		fmt.Println("Found other peer(s) on the network! Copied the already existing log")
 	}
 
-	//Network
 	networkmanager.InitNewElevator(&newLog, id)
 	logIndex := networkmanager.GetLogIndex(newLog, id)
 	println("Local index: \t ", logIndex)
 
-	elevio.Init("localhost:15657", NumFloors)
-
+	//FSM
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	startUp := make(chan bool)
@@ -67,8 +71,6 @@ func main() {
 	fsm.InitFSM(drv_floors, logIndex, logFromFSM)
 	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM)
 
-	// elev := log[logIndex]
-
 	orderhandler.TestCost(newLog)
 
 	transmitter := time.NewTicker(10 * time.Millisecond)
@@ -79,7 +81,10 @@ func main() {
 		select {
 
 		case newLog = <-logRx:
+
+			newLog = orderhandler.AcceptOrders(newLog)
 			orderhandler.SetLog(newLog)
+
 			fsm.UpdateButtonLights(newLog)
 			startUp <- true
 			println("Recieved something")
@@ -93,6 +98,7 @@ func main() {
 			}
 
 		case updatedLog := <-logFromFSM:
+
 			if updatedLog != orderhandler.GetLog() {
 				transmit = true
 			}
@@ -124,6 +130,7 @@ func main() {
 			for i := 0; i < len(p.Peers); i++ {
 				fmt.Println(p.Peers[i])
 			}
+<<<<<<< HEAD
 			fmt.Println("IDS:")
 			for i := 0; i < NumElevators; i++ {
 				fmt.Println(newLog[i].Id)
@@ -142,6 +149,8 @@ func main() {
 				}
 			}
 			
+=======
+>>>>>>> ae4a35bd8e239a09bc53d9afc21bde5463c9e3bd
 
 		case dead := <-deadElev:
 			println(dead)

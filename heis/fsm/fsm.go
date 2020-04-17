@@ -28,17 +28,11 @@ func shouldStop(elev orderhandler.Elevator, floor int) bool {
 	if elev.Floor == 0 || elev.Floor == NumFloors-1 {
 		return true
 	}
-	if elev.Orders[floor][elevio.BT_HallUp] != 0 && elev.Dir == elevio.MD_Up {
-		return true
-	}
-	if elev.Orders[floor][elevio.BT_HallDown] != 0 && elev.Dir == elevio.MD_Down {
-		return true
-	}
-	if elev.Orders[floor][elevio.BT_Cab] != 0 {
+	if orderhandler.OrdersOnFloor(floor, elev) {
 		return true
 	}
 	if !orderhandler.OrdersInFront(elev) {
-		if elev.Orders[floor][elevio.BT_HallUp] == 2 || elev.Orders[elev.Floor][elevio.BT_HallDown] == 2 {
+		if elev.Orders[floor][elevio.BT_HallUp] == Accepted || elev.Orders[elev.Floor][elevio.BT_HallDown] == Accepted {
 			return true
 		}
 	}
@@ -48,7 +42,7 @@ func shouldStop(elev orderhandler.Elevator, floor int) bool {
 func anyActiveOrders(elev orderhandler.Elevator) bool {
 	for f := 0; f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
-			if elev.Orders[f][b] == 2 {
+			if elev.Orders[f][b] == Accepted {
 				return true
 			}
 		}
@@ -64,7 +58,7 @@ func getDir(elev orderhandler.Elevator) elevio.MotorDirection {
 	if elev.Dir == elevio.MD_Stop {
 		for f := 0; f < NumFloors; f++ {
 			for b := 0; b < NumButtons; b++ {
-				if elev.Orders[f][b] == 2 {
+				if elev.Orders[f][b] == Accepted {
 					if f < elev.Floor {
 						return elevio.MD_Down
 					}
@@ -82,6 +76,7 @@ func getDir(elev orderhandler.Elevator) elevio.MotorDirection {
 	return elevio.MotorDirection(-elev.Dir)
 }
 
+//UpdateButtonLights sets all Elevator button lights on/off depending on accepted orders
 func UpdateButtonLights(log orderhandler.ElevLog) {
 
 	var lights [NumFloors][NumButtons]bool
@@ -90,7 +85,7 @@ func UpdateButtonLights(log orderhandler.ElevLog) {
 	for i := 0; i < NumElevators; i++ {
 		for f := 0; f < NumFloors; f++ {
 			for b := 0; b < NumButtons-1; b++ {
-				if log[i].Orders[f][b] == 2 {
+				if log[i].Orders[f][b] == Accepted {
 					lights[f][b] = true
 				}
 			}
@@ -99,7 +94,7 @@ func UpdateButtonLights(log orderhandler.ElevLog) {
 
 	//Cab order lights
 	for f := 0; f < NumFloors; f++ {
-		if log[LogIndex].Orders[f][2] == 2 {
+		if log[LogIndex].Orders[f][2] == Accepted {
 			lights[f][2] = true
 		}
 	}

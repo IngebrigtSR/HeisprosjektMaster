@@ -14,7 +14,7 @@ type Elevator struct {
 	Dir    elevio.MotorDirection
 	Floor  int
 	State  State
-	Orders [NumFloors][NumButtons]int
+	Orders [NumFloors][NumButtons]OrderStatus
 }
 
 //ElevLog array of all system elevators
@@ -36,7 +36,7 @@ func SetLog(newLog ElevLog) {
 func ordersAbove(elev Elevator) bool {
 	for f := elev.Floor + 1; 0 <= f && f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
-			if elev.Orders[f][b] != 0 {
+			if elev.Orders[f][b] != Unassigned {
 				return true
 			}
 		}
@@ -48,7 +48,7 @@ func ordersAbove(elev Elevator) bool {
 func ordersBelow(elev Elevator) bool {
 	for f := elev.Floor - 1; 0 <= f && f < NumFloors; f-- {
 		for b := 0; b < NumButtons; b++ {
-			if elev.Orders[f][b] != 0 {
+			if elev.Orders[f][b] != Unassigned {
 				return true
 			}
 		}
@@ -69,23 +69,26 @@ func OrdersInFront(elev Elevator) bool {
 	return false
 }
 
-//Checks if an elevator has orders on a given floor, used to for calculations in cost function
-func ordersOnFloor(floor int, elev Elevator) bool {
+//OrdersOnFloor check if an elevator has accepted orders on a given floor
+func OrdersOnFloor(floor int, elev Elevator) bool {
+
+	cabOrder := (elev.Orders[floor][int(elevio.BT_Cab)] == Accepted)
 
 	switch d := elev.Dir; d {
 	case elevio.MD_Down:
-		return elev.Orders[floor][int(elevio.BT_HallDown)] != 0
+		return elev.Orders[floor][int(elevio.BT_HallDown)] == Accepted || cabOrder
 
 	case elevio.MD_Up:
-		return elev.Orders[floor][int(elevio.BT_HallUp)] != 0
+		return elev.Orders[floor][int(elevio.BT_HallUp)] == Accepted || cabOrder
 
 	case elevio.MD_Stop:
 		for b := 0; b < NumButtons; b++ {
-			if elev.Orders[floor][b] != 0 {
+			if elev.Orders[floor][b] == Accepted {
 				return true
 			}
 		}
 	}
+
 	return false
 }
 
@@ -106,7 +109,7 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 		println(startFloor)
 
 		for elev.Floor != order.Floor {
-			if ordersOnFloor(elev.Floor, elev) {
+			if OrdersOnFloor(elev.Floor, elev) {
 				cost += 2
 			} else {
 				cost++
@@ -151,7 +154,7 @@ func oldCost(order elevio.ButtonEvent, elevator Elevator) int {
 		for 0 <= elev.Floor && elev.Floor < NumFloors {
 			if elev.Floor == order.Floor {
 				return cost
-			} else if ordersOnFloor(elev.Floor, elev) {
+			} else if OrdersOnFloor(elev.Floor, elev) {
 				cost += 2
 			} else {
 				cost++
@@ -175,7 +178,7 @@ func oldCost(order elevio.ButtonEvent, elevator Elevator) int {
 			println(elev.Floor)
 			if elev.Floor == order.Floor {
 				return cost
-			} else if ordersOnFloor(elev.Floor, elev) {
+			} else if OrdersOnFloor(elev.Floor, elev) {
 				cost += 2
 			} else {
 				cost++
@@ -222,11 +225,16 @@ func AllElevatorsDead(log ElevLog) bool {
 //DistributeOrder assigns a given order to the "closest" elevator
 func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
 
-	cheapestElev := getCheapestElev(order, log)
-	if cheapestElev == LogIndex {
-		log[cheapestElev].Orders[order.Floor][order.Button] = 2
+	if order.Button == elevio.BT_Cab {
+		log[LogIndex].Orders[order.Floor][2] = Accepted
 	} else {
-		log[cheapestElev].Orders[order.Floor][order.Button] = 1
+
+		cheapestElev := getCheapestElev(order, log)
+		if cheapestElev == LogIndex {
+			log[cheapestElev].Orders[order.Floor][order.Button] = Accepted
+		} else {
+			log[cheapestElev].Orders[order.Floor][order.Button] = Assigned
+		}
 	}
 	return log
 }
@@ -235,8 +243,8 @@ func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
 func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 	if log[deadElev].State == DEAD {
 		for f := 0; f < NumFloors; f++ {
-			for b := 0; b < NumButtons; b++ {
-				if log[deadElev].Orders[f][b] != 0 {
+			for b := 0; b < NumButtons-1; b++ {
+				if log[deadElev].Orders[f][b] != Unassigned {
 					order := elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
 					log = DistributeOrder(order, log)
 				}
@@ -250,8 +258,8 @@ func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 func AcceptOrders(log ElevLog) ElevLog {
 	for f := 0; f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
-			if log[LogIndex].Orders[f][b] == 1 {
-				log[LogIndex].Orders[f][b] = 2
+			if log[LogIndex].Orders[f][b] == Assigned {
+				log[LogIndex].Orders[f][b] = Accepted
 			}
 		}
 	}
@@ -280,7 +288,7 @@ func ClearOrdersFloor(floor int, elevID int, log ElevLog) ElevLog {
 	// }
 
 	for b := 0; b < NumButtons; b++ {
-		elev.Orders[floor][b] = 0
+		elev.Orders[floor][b] = Unassigned
 	}
 
 	log[elevID] = elev
@@ -299,7 +307,7 @@ func MakeEmptyLog() ElevLog {
 
 		for i := 0; i < NumFloors; i++ {
 			for j := 0; j < NumButtons; j++ {
-				log[elev].Orders[i][j] = 0
+				log[elev].Orders[i][j] = Unassigned
 			}
 		}
 
@@ -307,16 +315,18 @@ func MakeEmptyLog() ElevLog {
 	return log
 }
 
+//PrintOrders prints a given elevators Orders to terminal
 func PrintOrders(elevIndex int, log ElevLog) {
 	for i := 0; i < NumButtons; i++ {
 		for j := 0; j < NumFloors; j++ {
-			fmt.Print(log[elevIndex].Orders[j][i], "\t")
+			fmt.Print(int(log[elevIndex].Orders[j][i]), "\t")
 		}
 		println()
 	}
 	println()
 }
 
+//PrintElev print a given elevator to terminal
 func PrintElev(elev Elevator) {
 	println("Elevator:")
 	println("Diraction: \t", elev.Dir)
@@ -324,6 +334,7 @@ func PrintElev(elev Elevator) {
 	println("Floor: \t", elev.Floor)
 }
 
+//TestCost tests the cost function
 func TestCost(log ElevLog) {
 	elev := log[0]
 
