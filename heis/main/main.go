@@ -112,7 +112,7 @@ func main() {
 					deadElevIndex := networkmanager.GetLogIndex(newLog, lostID)
 					if deadElevIndex != -1 {
 						fmt.Println("Log index for the lost elevator:", deadElevIndex)
-						newLog := orderhandler.ReAssignOrders(newLog, deadElevIndex)
+						newLog = orderhandler.ReAssignOrders(newLog, deadElevIndex)
 						newLog[deadElevIndex].State = DEAD
 						orderhandler.SetLog(newLog)
 						transmit = true
@@ -137,7 +137,6 @@ func main() {
 				newID := p.New
 				newElevIndex := networkmanager.GetLogIndex(newLog, newID)
 				if newElevIndex != -1 {
-					// newLog[newElevIndex].State =
 					fmt.Println("Log index for the new elevator:", newElevIndex)
 				} else {
 					fmt.Println("Did not find the new elevator in the log")
