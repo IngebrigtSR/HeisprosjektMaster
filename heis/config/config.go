@@ -8,7 +8,7 @@ const (
 	DoorOpenTime = 3  //sec
 	ElevTimeout  = 20 //sec
 
-	//Div porter for kommunikajson osv
+	//Div porter for kommunikasjon osv
 
 	// LogBCPort = 20000
 )
