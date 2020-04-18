@@ -111,29 +111,6 @@ func UpdateButtonLights(log orderhandler.ElevLog) {
 	}
 }
 
-//floorArrival prints the current floor and updates the log. Also updates the orderhandler,
-//stops the elevator and turns the open door indicator on/off if the elevator should stop there.
-func floorArrival(log orderhandler.ElevLog, floor int) orderhandler.ElevLog {
-	fmt.Printf("Floor:\t%+v\n", floor)
-	elevio.SetFloorIndicator(floor)
-	log[LogIndex].Floor = floor
-
-	if shouldStop(log[LogIndex], floor) {
-		log = orderhandler.ClearOrdersFloor(floor, LogIndex, log)
-		elevio.SetMotorDirection(elevio.MD_Stop)
-
-		elevio.SetDoorOpenLamp(true)
-
-		doorTimer := time.NewTimer(DoorOpenTime * time.Second)
-		<-doorTimer.C
-
-		elevio.SetDoorOpenLamp(false)
-
-	}
-
-	return log
-}
-
 //InitFSM initializes the FSM
 func InitFSM(drv_floors chan int, localIndex int, newLogChan chan orderhandler.ElevLog) {
 	log := orderhandler.GetLog()
@@ -200,8 +177,6 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			}
 
 			newLogChan <- log
-			// UpdateButtonLights(log)
-			//orderhandler.SetLog(log)
 
 		case floor := <-drv_floors:
 			motorTimer.Reset(ElevTimeout * time.Second)
@@ -223,8 +198,6 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			}
 
 			newLogChan <- log
-			// UpdateButtonLights(log)
-			// orderhandler.SetLog(log)
 
 		case <-doorTimer.C:
 			log := orderhandler.GetLog()
@@ -242,9 +215,6 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			elevio.SetMotorDirection(dir)
 
 			newLogChan <- log
-
-			// UpdateButtonLights(log)
-			// orderhandler.SetLog(log)
 
 		case <-startUp: //Detects if main recieves new log from Network (only needed to get Elev out of IDLE)
 			log := orderhandler.GetLog()
@@ -274,7 +244,6 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			}
 
 			newLogChan <- log
-			// orderhandler.SetLog(log)
 
 		case <-drv_obstr:
 			orderhandler.PrintOrders(LogIndex, orderhandler.GetLog())
@@ -284,38 +253,3 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 		}
 	}
 }
-
-// func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, ) {
-// 	// elevio.Init("localhost:15657", NumFloors)
-
-// 	var elev orderhandler.Elevator
-// 	initFSM()
-
-// 	go elevio.PollButtons(drv_buttons)
-// 	go elevio.PollFloorSensor(drv_floors)
-
-// 	for {
-// 		select {
-// 		case order := <-drv_buttons:
-// 			fmt.Printf("Order:\t%+v\n", order)
-// 			if !(order.Floor == elev.Floor && elev.Dir == elevio.MD_Stop) {
-// 				takeOrder(order.Floor, order.Button)
-// 			}
-// 			elev.Dir = getDir(elev)
-// 			elevio.SetMotorDirection(elev.Dir)
-
-// 		case floor := <-drv_floors:
-// 			fmt.Printf("Floor:\t%+v\n", floor)
-// 			elevio.SetFloorIndicator(floor)
-// 			elev.Floor = floor
-
-// 			if shouldStop(elev) {
-// 				clearFloorOrders(floor)
-// 				elevio.SetMotorDirection(elevio.MD_Stop)
-// 			}
-// 			elev.Dir = getDir(elev)
-// 			elevio.SetMotorDirection(elev.Dir)
-
-// 		}
-// 	}
-// }
