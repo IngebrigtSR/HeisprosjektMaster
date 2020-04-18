@@ -33,7 +33,6 @@ func main() {
 	go peers.Transmitter(15647, id, peerTxEnable)
 	go peers.Receiver(15647, peerUpdateCh)
 
-	p = <-peerUpdateCh
 	timer := time.NewTimer(5 * time.Second)
 	peerInitDone := false
 	for !peerInitDone {
@@ -140,6 +139,7 @@ func main() {
 					fmt.Println("Log index for the new elevator:", newElevIndex)
 				} else {
 					fmt.Println("Did not find the new elevator in the log")
+					transmit = true
 				}
 			}
 
