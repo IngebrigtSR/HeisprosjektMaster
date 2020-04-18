@@ -20,7 +20,6 @@ func main() {
 	var newLog orderhandler.ElevLog
 
 	//Network & Peers
-
 	logTx := make(chan orderhandler.ElevLog)
 	logRx := make(chan orderhandler.ElevLog)
 	go bcast.Transmitter(16569, logTx)

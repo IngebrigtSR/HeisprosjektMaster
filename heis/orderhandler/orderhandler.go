@@ -131,6 +131,7 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 	return cost
 }
 
+//getCheapestElev returns the most suited elevator for an order
 func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 	cheapestElev := -1
 	cheapestCost := 10000

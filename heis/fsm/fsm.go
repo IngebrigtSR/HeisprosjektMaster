@@ -111,6 +111,8 @@ func UpdateButtonLights(log orderhandler.ElevLog) {
 	}
 }
 
+//floorArrival prints the current floor and updates the log. Also updates the orderhandler,
+//stops the elevator and turns the open door indicator on/off if the elevator should stop there.
 func floorArrival(log orderhandler.ElevLog, floor int) orderhandler.ElevLog {
 	fmt.Printf("Floor:\t%+v\n", floor)
 	elevio.SetFloorIndicator(floor)
@@ -150,7 +152,7 @@ func InitFSM(drv_floors chan int, localIndex int, newLogChan chan orderhandler.E
 	orderhandler.SetLog(log)
 }
 
-//ElevFSM handles logic used to execute waiting orders and run the elevator
+//ElevFSM handles logic used to execute standing orders and run the elevator
 func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool, newLogChan chan orderhandler.ElevLog, deadElev chan int) {
 
 	drv_obstr := make(chan bool)

@@ -6,6 +6,7 @@ import (
 	"../../orderhandler"
 )
 
+//InitNewElevator initializes a new elevator on the network
 func InitNewElevator(logPtr *orderhandler.ElevLog, id string) {
 	elev := orderhandler.Elevator{}
 	elev.Id = id
