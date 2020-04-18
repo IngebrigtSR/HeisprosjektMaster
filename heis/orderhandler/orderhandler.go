@@ -171,6 +171,7 @@ func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 				if log[deadElev].Orders[f][b] != Unassigned {
 					order := elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
 					log = DistributeOrder(order, log)
+					log[deadElev].Orders[f][b] = Unassigned
 				}
 			}
 		}

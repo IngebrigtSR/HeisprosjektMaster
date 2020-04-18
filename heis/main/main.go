@@ -109,7 +109,7 @@ func main() {
 					fmt.Println(p.Lost[i])
 					lostID := p.Lost[i]
 					deadElevIndex := networkmanager.GetLogIndex(newLog, lostID)
-					if deadElevIndex != -1 {
+					if deadElevIndex != -1 && deadElevIndex != LogIndex {
 						fmt.Println("Log index for the lost elevator:", deadElevIndex)
 						newLog = orderhandler.ReAssignOrders(newLog, deadElevIndex)
 						newLog[deadElevIndex].State = DEAD
