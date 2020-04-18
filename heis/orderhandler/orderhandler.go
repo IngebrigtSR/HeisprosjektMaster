@@ -15,6 +15,7 @@ type Elevator struct {
 	Floor  int
 	State  State
 	Orders [NumFloors][NumButtons]OrderStatus
+	Active bool
 }
 
 //ElevLog array of all system elevators
@@ -137,7 +138,7 @@ func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 	cheapestCost := 10000
 	for elev := 0; elev < NumElevators; elev++ {
 		cost := getCost(order, log[elev])
-		if cost < cheapestCost && log[elev].State != DEAD {
+		if cost < cheapestCost && log[elev].State != DEAD && log[elev].Active {
 			cheapestElev = elev
 			cheapestCost = cost
 		}
@@ -165,7 +166,7 @@ func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
 
 //ReAssignOrders reassigns hall orders from a Dead elevator to the others
 func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
-	if log[deadElev].State == DEAD {
+	if log[deadElev].State == DEAD || !log[deadElev].Active {
 		for f := 0; f < NumFloors; f++ {
 			for b := 0; b < NumButtons-1; b++ {
 				if log[deadElev].Orders[f][b] != Unassigned {
@@ -235,6 +236,7 @@ func MakeEmptyLog() ElevLog {
 		log[elev].Floor = -1
 		log[elev].State = DEAD
 		log[elev].Id = ""
+		log[elev].Active = false
 
 		for i := 0; i < NumFloors; i++ {
 			for j := 0; j < NumButtons; j++ {
