@@ -145,35 +145,21 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 
 		case order := <-drv_buttons:
 			//watchdog.Reset(ElevTimeout * time.Second)
-
 			log := orderhandler.GetLog()
 			fmt.Printf("Order:\t%+v\n", order)
 
-			//Locally executes any recieved orders if Elevator is standing stil on same floor
-			if log[LogIndex].Floor == order.Floor && log[LogIndex].State != MOVING {
-				if log[LogIndex].State == DOOROPEN {
-					doorTimer.Reset(DoorOpenTime * time.Second)
-				}
-				if log[LogIndex].State == IDLE {
-					elevio.SetDoorOpenLamp(true)
-					doorTimer.Reset(DoorOpenTime * time.Second)
-					log[LogIndex].State = DOOROPEN
-				}
-			} else {
-				log = orderhandler.DistributeOrder(order, log)
+			log = orderhandler.DistributeOrder(order, log)
+			dir := getDir(log[LogIndex])
+			log[LogIndex].Dir = dir
 
-				dir := getDir(log[LogIndex])
-				log[LogIndex].Dir = dir
-
-				//To prevent Elev from moving with the door open or dead hardware
-				if log[LogIndex].State != DOOROPEN && log[LogIndex].State != DEAD {
-					if dir == elevio.MD_Stop {
-						log[LogIndex].State = IDLE
-					} else {
-						log[LogIndex].State = MOVING
-					}
-					elevio.SetMotorDirection(dir)
+			//To prevent Elev from moving with the door open or dead hardware
+			if log[LogIndex].State != DOOROPEN && log[LogIndex].State != DEAD {
+				if dir == elevio.MD_Stop {
+					log[LogIndex].State = IDLE
+				} else {
+					log[LogIndex].State = MOVING
 				}
+				elevio.SetMotorDirection(dir)
 			}
 
 			newLogChan <- log
@@ -219,17 +205,25 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 		case <-startUp: //Detects if main recieves new log from Network (only needed to get Elev out of IDLE)
 			log := orderhandler.GetLog()
 
-			deadElev <- orderhandler.DetectDead(log)
+			//deadElev <- orderhandler.DetectDead(log)
 
-			if log[LogIndex].State == IDLE {
-
+			println(log[LogIndex].Floor)
+			if orderhandler.OrdersOnFloor(log[LogIndex].Floor, log[LogIndex]) {
+				if log[LogIndex].State != MOVING {
+					elevio.SetMotorDirection(elevio.MD_Stop)
+					doorTimer.Reset(DoorOpenTime * time.Second)
+					log[LogIndex].State = DOOROPEN
+					elevio.SetDoorOpenLamp(true)
+					log = orderhandler.ClearOrdersFloor(log[LogIndex].Floor, LogIndex, log)
+				}
+			} else if log[LogIndex].State == IDLE {
 				dir := getDir(log[LogIndex])
-				elevio.SetMotorDirection(dir)
 				log[LogIndex].Dir = dir
 
 				if dir != elevio.MD_Stop {
 					log[LogIndex].State = MOVING
 				}
+				elevio.SetMotorDirection(dir)
 			}
 
 			newLogChan <- log

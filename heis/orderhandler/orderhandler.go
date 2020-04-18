@@ -180,15 +180,17 @@ func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 }
 
 //AcceptOrders goes through the log and looks for orders assigned to the local Elevator and accepts them
-func AcceptOrders(log ElevLog) ElevLog {
+func AcceptOrders(log ElevLog) (ElevLog, bool) {
+	accepted := false
 	for f := 0; f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
 			if log[LogIndex].Orders[f][b] == Assigned {
 				log[LogIndex].Orders[f][b] = Accepted
+				accepted = true
 			}
 		}
 	}
-	return log
+	return log, accepted
 }
 
 //ClearOrdersFloor clears orders on a given floor with regards to direction

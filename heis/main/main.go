@@ -72,13 +72,17 @@ func main() {
 	transmitter := time.NewTicker(10 * time.Millisecond)
 	//timer := time.NewTimer(5 * time.Second)
 	transmit := false
+	println("Initialization completed")
 	for {
 		select {
 
 		case newLog = <-logRx:
 
-			newLog = orderhandler.AcceptOrders(newLog)
+			newLog, accepted := orderhandler.AcceptOrders(newLog)
 			orderhandler.SetLog(newLog)
+			if accepted {
+				transmit = true
+			}
 
 			fsm.UpdateButtonLights(newLog)
 			startUp <- true
@@ -114,11 +118,11 @@ func main() {
 						newLog = orderhandler.ReAssignOrders(newLog, deadElevIndex)
 						newLog[deadElevIndex].State = DEAD
 						orderhandler.SetLog(newLog)
-						transmit = true
 					} else {
 						fmt.Println("Did not find the lost elevator in the log")
 					}
 				}
+				transmit = true
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
 			fmt.Println("PEERS:")
