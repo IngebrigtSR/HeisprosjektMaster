@@ -60,15 +60,15 @@ func main() {
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	startUp := make(chan bool)
-	logFromFSM := make(chan orderhandler.ElevLog)
+	logFromFSMChan := make(chan orderhandler.ElevLog)
 	deadElev := make(chan int)
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 
-	fsm.InitFSM(drv_floors, LogIndex, logFromFSM)
+	fsm.InitFSM(drv_floors, LogIndex, logFromFSMChan)
 	logTx <- orderhandler.GetLog()
-	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSM, deadElev)
+	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSMChan, deadElev)
 
 	transmitter := time.NewTicker(10 * time.Millisecond)
 	//timer := time.NewTimer(5 * time.Second)
@@ -92,15 +92,15 @@ func main() {
 				transmit = false
 			}
 
-		case updatedLog := <-logFromFSM:
+		case logFromFSM := <-logFromFSMChan:
 
-			if updatedLog != orderhandler.GetLog() {
+			if logFromFSM != orderhandler.GetLog() {
 				transmit = true
 			}
 
-			fsm.UpdateButtonLights(updatedLog)
+			fsm.UpdateButtonLights(logFromFSM)
 
-			orderhandler.SetLog(updatedLog)
+			orderhandler.SetLog(logFromFSM)
 
 		case p = <-peerUpdateCh:
 
@@ -112,8 +112,10 @@ func main() {
 					deadElevIndex := networkmanager.GetLogIndex(newLog, lostID)
 					if deadElevIndex != -1 {
 						fmt.Println("Log index for the lost elevator:", deadElevIndex)
-						newLog = orderhandler.ReAssignOrders(newLog, deadElevIndex)
+						newLog := orderhandler.ReAssignOrders(newLog, deadElevIndex)
 						newLog[deadElevIndex].State = DEAD
+						orderhandler.SetLog(newLog)
+						transmit = true
 					} else {
 						fmt.Println("Did not find the lost elevator in the log")
 					}
