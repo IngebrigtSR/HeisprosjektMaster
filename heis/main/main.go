@@ -90,20 +90,20 @@ func main() {
 
 		case <-transmitter.C:
 			if transmit {
-				logTx <- orderhandler.GetLog()
+				logTx <- newLog
 				println("Broadcasted log")
 				transmit = false
 			}
 
-		case logFromFSM := <-logFromFSMChan:
+		case newLog = <-logFromFSMChan:
 
-			if logFromFSM != orderhandler.GetLog() {
+			if newLog != orderhandler.GetLog() {
 				transmit = true
 			}
 
-			fsm.UpdateButtonLights(logFromFSM)
+			fsm.UpdateButtonLights(newLog)
 
-			orderhandler.SetLog(logFromFSM)
+			orderhandler.SetLog(newLog)
 
 		case p = <-peerUpdateCh:
 
@@ -152,9 +152,9 @@ func main() {
 
 		case dead := <-deadElev:
 			if dead != -1 {
-				log := orderhandler.GetLog()
-				log = orderhandler.ReAssignOrders(log, dead)
-				if log != orderhandler.GetLog() {
+				newLog = orderhandler.GetLog()
+				newLog = orderhandler.ReAssignOrders(newLog, dead)
+				if newLog != orderhandler.GetLog() {
 					transmit = true
 				}
 			}
