@@ -26,14 +26,16 @@ func main() {
 
 	var p peers.PeerUpdate
 	id := "Heis numero 1"
+
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	go peers.Transmitter(PeerPort, id, peerTxEnable)
 	go peers.Receiver(PeerPort, peerUpdateCh)
 
+	//Init log
 	newLog := orderhandler.InitLog(peerUpdateCh, logRx)
-
 	networkmanager.InitNewElevator(&newLog, id)
+
 	LogIndex = networkmanager.GetLogIndex(newLog, id)
 	orderhandler.SetLog(newLog)
 	println("Local index: \t ", LogIndex)
@@ -58,6 +60,7 @@ func main() {
 	transmit := false
 	fsmWatchdog := time.NewTimer(ElevTimeout * time.Second)
 	println("Initialization completed")
+
 	for {
 		select {
 
@@ -100,8 +103,8 @@ func main() {
 						fmt.Println("\n Did not find the lost elevator in the log")
 					}
 				}
-				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
+
 			fmt.Print("\n PEERS:")
 			for i := 0; i < len(p.Peers); i++ {
 				fmt.Print("\t", p.Peers[i])
@@ -140,7 +143,7 @@ func main() {
 
 		case <-fsmWatchdog.C:
 			log := orderhandler.GetLog()
-			//If all Elevators IDLE timer will never be reset
+			//If all Elevators are IDLE timer will never be reset
 			if log[LogIndex].State != IDLE {
 				log[LogIndex].State = DEAD
 				fmt.Println("FSM has crashed")
