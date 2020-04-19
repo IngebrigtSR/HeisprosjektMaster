@@ -167,6 +167,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 
 				if dir != elevio.MD_Stop {
 					log[LogIndex].State = MOVING
+					motorTimer.Reset(ElevTimeout * time.Second)
 				}
 				elevio.SetMotorDirection(dir)
 			}
@@ -188,6 +189,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 					log[LogIndex].State = IDLE
 				} else {
 					log[LogIndex].State = MOVING
+					motorTimer.Reset(ElevTimeout * time.Second)
 				}
 				elevio.SetMotorDirection(dir)
 			}
@@ -226,6 +228,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				log[LogIndex].State = IDLE
 			} else {
 				log[LogIndex].State = MOVING
+				motorTimer.Reset(ElevTimeout * time.Second)
 			}
 
 			elevio.SetMotorDirection(dir)

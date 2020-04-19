@@ -17,7 +17,6 @@ func main() {
 	fmt.Println("Hello World")
 
 	elevio.Init("localhost:15657", NumFloors)
-	var newLog orderhandler.ElevLog
 
 	//Network & Peers
 	logTx := make(chan orderhandler.ElevLog)
@@ -32,24 +31,7 @@ func main() {
 	go peers.Transmitter(PeerPort, id, peerTxEnable)
 	go peers.Receiver(PeerPort, peerUpdateCh)
 
-	timer := time.NewTimer(5 * time.Second)
-	peerInitDone := false
-	for !peerInitDone {
-		select {
-		case p = <-peerUpdateCh:
-		case <-timer.C:
-			peerInitDone = true
-		}
-	}
-
-	if len(p.Peers) == 1 {
-		newLog = orderhandler.MakeEmptyLog()
-		fmt.Println("No other peers on network. Created a new empty log")
-	} else {
-		fmt.Println("Waiting on log from other peer(s)")
-		newLog = <-logRx
-		fmt.Println("Found other peer(s) on the network! Copied the already existing log")
-	}
+	newLog := orderhandler.InitLog(peerUpdateCh, logRx)
 
 	networkmanager.InitNewElevator(&newLog, id)
 	LogIndex = networkmanager.GetLogIndex(newLog, id)

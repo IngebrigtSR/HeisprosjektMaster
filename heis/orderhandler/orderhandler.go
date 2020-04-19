@@ -3,9 +3,11 @@ package orderhandler
 import (
 	"fmt"
 	"math"
+	"time"
 
 	. "../config"
 	"../elevio"
+	"../network/peers"
 )
 
 //Elevator struct
@@ -22,6 +24,30 @@ type Elevator struct {
 type ElevLog [NumElevators]Elevator
 
 var localLog ElevLog
+
+
+func InitLog(peerUpdateCh chan peers.PeerUpdate, logRx chan ElevLog) ElevLog {
+	timer := time.NewTimer(5 * time.Second)
+	peerInitDone := false
+	var p peers.PeerUpdate
+	for !peerInitDone {
+		select {
+		case p = <-peerUpdateCh:
+		case <-timer.C:
+			peerInitDone = true
+		}
+	}
+	var newLog ElevLog
+	if len(p.Peers) == 1 {
+		newLog = MakeEmptyLog()
+		fmt.Println("No other peers on network. Created a new empty log")
+	} else {
+		fmt.Println("Waiting on log from other peer(s)")
+		newLog = <-logRx
+		fmt.Println("Found other peer(s) on the network! Copied the already existing log")
+	}
+	return newLog
+}
 
 //GetLog returns the current locally stored log
 func GetLog() ElevLog {
