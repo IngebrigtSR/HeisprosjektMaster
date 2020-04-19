@@ -143,6 +143,32 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 	for {
 		select {
 
+		case <-startUp: //Detects if main recieves new log from Network
+			log := orderhandler.GetLog()
+
+			deadElev <- orderhandler.DetectDead(log)
+
+			println(log[LogIndex].Floor)
+			if orderhandler.OrdersOnFloor(log[LogIndex].Floor, log[LogIndex]) {
+				if log[LogIndex].State != MOVING {
+					elevio.SetMotorDirection(elevio.MD_Stop)
+					doorTimer.Reset(DoorOpenTime * time.Second)
+					log[LogIndex].State = DOOROPEN
+					elevio.SetDoorOpenLamp(true)
+					log = orderhandler.ClearOrdersFloor(log[LogIndex].Floor, LogIndex, log)
+				}
+			} else if log[LogIndex].State == IDLE {
+				dir := getDir(log[LogIndex])
+				log[LogIndex].Dir = dir
+
+				if dir != elevio.MD_Stop {
+					log[LogIndex].State = MOVING
+				}
+				elevio.SetMotorDirection(dir)
+			}
+
+			newLogChan <- log
+
 		case order := <-drv_buttons:
 			//watchdog.Reset(ElevTimeout * time.Second)
 			log := orderhandler.GetLog()
@@ -199,32 +225,6 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 
 			elevio.SetDoorOpenLamp(false)
 			elevio.SetMotorDirection(dir)
-
-			newLogChan <- log
-
-		case <-startUp: //Detects if main recieves new log from Network (only needed to get Elev out of IDLE)
-			log := orderhandler.GetLog()
-
-			//deadElev <- orderhandler.DetectDead(log)
-
-			println(log[LogIndex].Floor)
-			if orderhandler.OrdersOnFloor(log[LogIndex].Floor, log[LogIndex]) {
-				if log[LogIndex].State != MOVING {
-					elevio.SetMotorDirection(elevio.MD_Stop)
-					doorTimer.Reset(DoorOpenTime * time.Second)
-					log[LogIndex].State = DOOROPEN
-					elevio.SetDoorOpenLamp(true)
-					log = orderhandler.ClearOrdersFloor(log[LogIndex].Floor, LogIndex, log)
-				}
-			} else if log[LogIndex].State == IDLE {
-				dir := getDir(log[LogIndex])
-				log[LogIndex].Dir = dir
-
-				if dir != elevio.MD_Stop {
-					log[LogIndex].State = MOVING
-				}
-				elevio.SetMotorDirection(dir)
-			}
 
 			newLogChan <- log
 
