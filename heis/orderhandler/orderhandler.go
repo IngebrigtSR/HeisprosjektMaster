@@ -126,6 +126,7 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 			elev.Floor += int(elev.Dir)
 		}
 
+		//make it a bit more exensive when door is open
 		if elev.State == DOOROPEN {
 			cost++
 		}
@@ -171,6 +172,7 @@ func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
 func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 	if log[deadElev].State == DEAD || !log[deadElev].Online {
 		for f := 0; f < NumFloors; f++ {
+			//b < NumButtons-1 to prevent reassigning cabOrders
 			for b := 0; b < NumButtons-1; b++ {
 				if log[deadElev].Orders[f][b] != Unassigned {
 
@@ -178,7 +180,7 @@ func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 					order := elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
 					log = DistributeOrder(order, log)
 
-					//clear order rom the dead elevator
+					//clear order from the dead elevator
 					log[deadElev].Orders[f][b] = Unassigned
 				}
 			}
@@ -234,13 +236,13 @@ func DetectDead(log ElevLog) int {
 	return -1
 }
 
-//UpdateOnlineElevOrders checks if new elevators has come online and copies their orders into the log
+//UpdateOnlineElevOrders checks if new elevators has come online and updates the log with them
 func UpdateOnlineElevOrders(newLog ElevLog) ElevLog {
 	log := GetLog()
 
 	for elev := 0; elev < NumElevators; elev++ {
 		if newLog[elev].Online && !log[elev].Online {
-			log[elev].Orders = newLog[elev].Orders
+			log[elev] = newLog[elev]
 		}
 	}
 	return log

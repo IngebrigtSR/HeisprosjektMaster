@@ -22,15 +22,15 @@ func main() {
 	//Network & Peers
 	logTx := make(chan orderhandler.ElevLog)
 	logRx := make(chan orderhandler.ElevLog)
-	go bcast.Transmitter(16569, logTx)
-	go bcast.Receiver(16569, logRx)
+	go bcast.Transmitter(BcastPort, logTx)
+	go bcast.Receiver(BcastPort, logRx)
 
 	var p peers.PeerUpdate
 	id := "Something"
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
-	go peers.Transmitter(15647, id, peerTxEnable)
-	go peers.Receiver(15647, peerUpdateCh)
+	go peers.Transmitter(PeerPort, id, peerTxEnable)
+	go peers.Receiver(PeerPort, peerUpdateCh)
 
 	timer := time.NewTimer(5 * time.Second)
 	peerInitDone := false
@@ -46,6 +46,7 @@ func main() {
 		newLog = orderhandler.MakeEmptyLog()
 		fmt.Println("No other peers on network. Created a new empty log")
 	} else {
+		fmt.Println("Waiting on log from other peer(s)")
 		newLog = <-logRx
 		fmt.Println("Found other peer(s) on the network! Copied the already existing log")
 	}
@@ -55,7 +56,7 @@ func main() {
 	orderhandler.SetLog(newLog)
 	println("Local index: \t ", LogIndex)
 
-	//FSM
+	//FSM channels
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	startUp := make(chan bool)
@@ -67,10 +68,10 @@ func main() {
 
 	fsm.InitFSM(drv_floors, LogIndex, logFromFSMChan)
 	logTx <- orderhandler.GetLog()
+
 	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSMChan, deadElev)
 
 	transmitter := time.NewTicker(10 * time.Millisecond)
-	//timer := time.NewTimer(5 * time.Second)
 	transmit := false
 	println("Initialization completed")
 	for {
@@ -85,6 +86,7 @@ func main() {
 			}
 
 			fsm.UpdateButtonLights(newLog)
+
 			startUp <- true
 			println("Recieved new log")
 
@@ -94,16 +96,6 @@ func main() {
 				println("Broadcasted log")
 				transmit = false
 			}
-
-		case newLog = <-logFromFSMChan:
-
-			if newLog != orderhandler.GetLog() {
-				transmit = true
-			}
-
-			fsm.UpdateButtonLights(newLog)
-
-			orderhandler.SetLog(newLog)
 
 		case p = <-peerUpdateCh:
 
@@ -118,11 +110,11 @@ func main() {
 						newLog[lostElevIndex].Online = false
 						newLog = orderhandler.ReAssignOrders(newLog, lostElevIndex)
 						orderhandler.SetLog(newLog)
+						transmit = true
 					} else {
 						fmt.Println("Did not find the lost elevator in the log")
 					}
 				}
-				transmit = true
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
 			fmt.Print("\n PEERS:")
@@ -149,6 +141,15 @@ func main() {
 				transmit = true
 
 			}
+
+		case newLog = <-logFromFSMChan:
+
+			if newLog != orderhandler.GetLog() {
+				transmit = true
+			}
+
+			fsm.UpdateButtonLights(newLog)
+			orderhandler.SetLog(newLog)
 
 		case dead := <-deadElev:
 			if dead != -1 {

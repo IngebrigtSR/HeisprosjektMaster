@@ -213,17 +213,17 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 
 		case <-doorTimer.C:
 			log := orderhandler.GetLog()
-
 			dir := getDir(log[LogIndex])
-			log[LogIndex].Dir = dir
 
+			elevio.SetDoorOpenLamp(false)
+
+			log[LogIndex].Dir = dir
 			if dir == elevio.MD_Stop {
 				log[LogIndex].State = IDLE
 			} else {
 				log[LogIndex].State = MOVING
 			}
 
-			elevio.SetDoorOpenLamp(false)
 			elevio.SetMotorDirection(dir)
 
 			newLogChan <- log

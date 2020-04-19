@@ -3,14 +3,14 @@ package config
 const (
 	NumFloors    = 4
 	NumButtons   = 3
-	NumElevators = 3
+	NumElevators = 2
 
 	DoorOpenTime = 3  //sec
-	ElevTimeout  = 20 //sec
+	ElevTimeout  = 15 //sec
 
-	//Div porter for kommunikasjon osv
-
-	// LogBCPort = 20000
+	//Ports
+	BcastPort = 16569
+	PeerPort  = 15647
 )
 
 var (
