@@ -135,7 +135,7 @@ func main() {
 			}
 
 			if len(p.New) != 0 {
-				fmt.Print("\n NEW:", p.new)
+				fmt.Print("\n NEW:", p.New)
 
 				newID := p.New
 				newElevIndex := networkmanager.GetLogIndex(newLog, newID)
