@@ -234,7 +234,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				motorTimer.Reset(ElevTimeout * time.Second)
 			} else {
 				log[LogIndex].State = DEAD
-				println("I DIED :'(")
+				println("Motor Failure")
 			}
 
 			newLogChan <- log

@@ -23,7 +23,7 @@ type ElevLog [NumElevators]Elevator
 
 var localLog ElevLog
 
-//GetLog return the current locally stored log
+//GetLog returns the current locally stored log
 func GetLog() ElevLog {
 	return localLog
 }
@@ -37,7 +37,7 @@ func SetLog(newLog ElevLog) {
 func ordersAbove(elev Elevator) bool {
 	for f := elev.Floor + 1; 0 <= f && f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
-			if elev.Orders[f][b] != Unassigned {
+			if elev.Orders[f][b] == Accepted {
 				return true
 			}
 		}
@@ -49,7 +49,7 @@ func ordersAbove(elev Elevator) bool {
 func ordersBelow(elev Elevator) bool {
 	for f := elev.Floor - 1; 0 <= f && f < NumFloors; f-- {
 		for b := 0; b < NumButtons; b++ {
-			if elev.Orders[f][b] != Unassigned {
+			if elev.Orders[f][b] == Accepted {
 				return true
 			}
 		}
@@ -70,7 +70,7 @@ func OrdersInFront(elev Elevator) bool {
 	return false
 }
 
-//OrdersOnFloor checks if an elevator has accepted orders on a given floor
+//OrdersOnFloor checks if an elevator has any accepted orders on a given floor
 func OrdersOnFloor(floor int, elev Elevator) bool {
 
 	cabOrder := (elev.Orders[floor][int(elevio.BT_Cab)] == Accepted)
@@ -92,6 +92,7 @@ func OrdersOnFloor(floor int, elev Elevator) bool {
 	return false
 }
 
+//Cost function calulates how "expensive" it is for an elevator to execute a given order
 func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 
 	elev := elevator //copy of elevator to simulate movement
@@ -132,10 +133,11 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 	return cost
 }
 
-//getCheapestElev returns the most suited elevator for an order
+//getCheapestElev returns the most closest/cheapest elevator to be assigned a given order
 func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 	cheapestElev := -1
 	cheapestCost := 10000
+
 	for elev := 0; elev < NumElevators; elev++ {
 		cost := getCost(order, log[elev])
 		if cost < cheapestCost && log[elev].State != DEAD && log[elev].Online {
@@ -143,10 +145,11 @@ func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 			cheapestCost = cost
 		}
 	}
+
 	return cheapestElev
 }
 
-//DistributeOrder assigns a given order to the "closest" elevator
+//DistributeOrder assigns a given order to the closest/cheapest elevator
 func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
 
 	if order.Button == elevio.BT_Cab {
@@ -170,8 +173,12 @@ func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 		for f := 0; f < NumFloors; f++ {
 			for b := 0; b < NumButtons-1; b++ {
 				if log[deadElev].Orders[f][b] != Unassigned {
+
+					//Assign order to a new elevator
 					order := elevio.ButtonEvent{Floor: f, Button: elevio.ButtonType(b)}
 					log = DistributeOrder(order, log)
+
+					//clear order rom the dead elevator
 					log[deadElev].Orders[f][b] = Unassigned
 				}
 			}
@@ -180,7 +187,7 @@ func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 	return log
 }
 
-//AcceptOrders goes through the log and looks for orders assigned to the local Elevator and accepts them
+//AcceptOrders accepts orders assigned by external elevators (returns true if any are accpted)
 func AcceptOrders(log ElevLog) (ElevLog, bool) {
 	accepted := false
 	for f := 0; f < NumFloors; f++ {
@@ -194,7 +201,7 @@ func AcceptOrders(log ElevLog) (ElevLog, bool) {
 	return log, accepted
 }
 
-//ClearOrdersFloor clears orders on a given floor with regards to direction
+//ClearOrdersFloor clears orders on a given floor with regards to direction of travel
 func ClearOrdersFloor(floor int, elevID int, log ElevLog) ElevLog {
 	elev := log[elevID]
 
@@ -227,6 +234,19 @@ func DetectDead(log ElevLog) int {
 	return -1
 }
 
+//UpdateOnlineElevOrders checks if new elevators has come online and copies their orders into the log
+func UpdateOnlineElevOrders(newLog ElevLog) ElevLog {
+	log := GetLog()
+
+	for elev := 0; elev < NumElevators; elev++ {
+		if newLog[elev].Online && !log[elev].Online {
+			log[elev].Orders = newLog[elev].Orders
+		}
+	}
+	return log
+
+}
+
 //MakeEmptyLog creates an empty ElevLog
 func MakeEmptyLog() ElevLog {
 	var log [NumElevators]Elevator
@@ -248,7 +268,7 @@ func MakeEmptyLog() ElevLog {
 	return log
 }
 
-//PrintOrders prints a given elevators Orders to terminal
+//PrintOrders prints the Orders array ofa given eleveator
 func PrintOrders(elevIndex int, log ElevLog) {
 	for i := 0; i < NumButtons; i++ {
 		for j := 0; j < NumFloors; j++ {
@@ -259,31 +279,11 @@ func PrintOrders(elevIndex int, log ElevLog) {
 	println()
 }
 
-//PrintElev print a given elevator to terminal
+//PrintElev prints a given elevators attributes/states
 func PrintElev(elev Elevator) {
 	println("Elevator:\t", elev.Id)
 	println("Direction: \t", elev.Dir)
 	println("State: \t", elev.State)
 	println("Floor: \t", elev.Floor)
-}
-
-//TestCost tests the cost function
-func TestCost(log ElevLog) {
-	elev := log[0]
-
-	elev.Dir = elevio.MD_Up
-	elev.Floor = 1
-	elev.State = MOVING
-
-	elev.Orders[2][1] = 2
-	elev.Orders[0][2] = 2
-
-	testOrder := elevio.ButtonEvent{Floor: 3, Button: elevio.BT_Cab}
-
-	//cost1 := oldCost(testOrder, elev)
-	cost2 := getCost(testOrder, elev)
-
-	//fmt.Println("Old cost fun: \t", cost1)
-	fmt.Println("New cost fun: \t", cost2)
-
+	println("Online: \t", elev.Online)
 }
