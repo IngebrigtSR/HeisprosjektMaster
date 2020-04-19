@@ -26,7 +26,7 @@ func main() {
 	go bcast.Receiver(BcastPort, logRx)
 
 	var p peers.PeerUpdate
-	id := "Something"
+	id := "Heis numero 1"
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	go peers.Transmitter(PeerPort, id, peerTxEnable)
@@ -68,7 +68,7 @@ func main() {
 
 	fsm.InitFSM(drv_floors, LogIndex, logFromFSMChan)
 	logTx <- orderhandler.GetLog()
-
+	time.Sleep(1 * time.Second)
 	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSMChan, deadElev)
 
 	transmitter := time.NewTicker(100 * time.Millisecond)
@@ -136,7 +136,7 @@ func main() {
 				if newElevIndex != -1 {
 					fmt.Println("\n Log index for the new elevator:", newElevIndex)
 					newLog[newElevIndex].Online = true
-					newLog = orderhandler.UpdateOnlineElevOrders(newLog)
+					newLog = orderhandler.UpdateOnlineElevators(newLog)
 					orderhandler.SetLog(newLog)
 				} else {
 					fmt.Println("\n Did not find the new elevator in the log")
@@ -157,9 +157,12 @@ func main() {
 
 		case <-fsmWatchdog.C:
 			log := orderhandler.GetLog()
-			log[LogIndex].State = DEAD
-			println("FSM has crashed")
-			transmit = true
+			//If all Elevators IDLE timer will never be reset
+			if log[LogIndex].State != IDLE {
+				log[LogIndex].State = DEAD
+				fmt.Println("FSM has crashed")
+				transmit = true
+			}
 		}
 	}
 }

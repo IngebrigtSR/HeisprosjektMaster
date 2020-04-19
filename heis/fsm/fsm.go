@@ -234,7 +234,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 
 		case <-motorTimer.C:
 			log := orderhandler.GetLog()
-			if log[LogIndex].State == IDLE {
+			if log[LogIndex].State == IDLE || log[LogIndex].State == DOOROPEN {
 				motorTimer.Reset(ElevTimeout * time.Second)
 			} else {
 				log[LogIndex].State = DEAD

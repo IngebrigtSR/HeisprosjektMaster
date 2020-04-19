@@ -236,8 +236,8 @@ func DetectDead(log ElevLog) int {
 	return -1
 }
 
-//UpdateOnlineElevOrders checks if new elevators has come online and updates the log with them
-func UpdateOnlineElevOrders(newLog ElevLog) ElevLog {
+//UpdateOnlineElevators checks if new elevators has come online and updates the log with them
+func UpdateOnlineElevators(newLog ElevLog) ElevLog {
 	log := GetLog()
 
 	for elev := 0; elev < NumElevators; elev++ {
