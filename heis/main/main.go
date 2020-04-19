@@ -69,6 +69,7 @@ func main() {
 	fsm.InitFSM(drv_floors, LogIndex, logFromFSMChan)
 	logTx <- orderhandler.GetLog()
 	time.Sleep(1 * time.Second)
+
 	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSMChan, deadElev)
 
 	transmitter := time.NewTicker(100 * time.Millisecond)
@@ -102,13 +103,13 @@ func main() {
 		case p = <-peerUpdateCh:
 
 			if len(p.Lost) != 0 {
-				fmt.Print("\n LOST:")
+				fmt.Print("\n LOST:\t")
 				for i := 0; i < len(p.Lost); i++ {
 					fmt.Print("\t", p.Lost[i])
 					lostID := p.Lost[i]
 					lostElevIndex := networkmanager.GetLogIndex(newLog, lostID)
 					if lostElevIndex != -1 && lostElevIndex != LogIndex {
-						fmt.Println("Log index for the lost elevator:", lostElevIndex)
+						fmt.Println("\nLog index for the lost elevator:", lostElevIndex)
 						newLog[lostElevIndex].Online = false
 						newLog = orderhandler.ReAssignOrders(newLog, lostElevIndex)
 						orderhandler.SetLog(newLog)
