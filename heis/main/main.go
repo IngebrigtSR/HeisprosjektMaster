@@ -108,9 +108,9 @@ func main() {
 		case p = <-peerUpdateCh:
 
 			if len(p.Lost) != 0 {
-				fmt.Println("LOST:")
+				fmt.Print("\n LOST:")
 				for i := 0; i < len(p.Lost); i++ {
-					fmt.Println(p.Lost[i])
+					fmt.Print("\t", p.Lost[i])
 					lostID := p.Lost[i]
 					lostElevIndex := networkmanager.GetLogIndex(newLog, lostID)
 					if lostElevIndex != -1 && lostElevIndex != LogIndex {
@@ -125,18 +125,18 @@ func main() {
 				transmit = true
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
 			}
-			fmt.Println("PEERS:")
+			fmt.Print("\n PEERS:")
 			for i := 0; i < len(p.Peers); i++ {
-				fmt.Println(p.Peers[i])
+				fmt.Print("\t", p.Peers[i])
 			}
-			fmt.Println("IDS:")
+			fmt.Print("\n IDS:")
 			for i := 0; i < NumElevators; i++ {
-				fmt.Println(newLog[i].Id)
+				fmt.Print("\t", newLog[i].Id)
 			}
 
 			if len(p.New) != 0 {
-				fmt.Println("NEW:")
-				fmt.Println(p.New)
+				fmt.Print("\n NEW:", p.new)
+
 				newID := p.New
 				newElevIndex := networkmanager.GetLogIndex(newLog, newID)
 				if newElevIndex != -1 {
