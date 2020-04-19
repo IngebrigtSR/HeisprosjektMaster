@@ -115,6 +115,7 @@ func UpdateButtonLights(log orderhandler.ElevLog) {
 func InitFSM(drv_floors chan int, localIndex int, newLogChan chan orderhandler.ElevLog) {
 	log := orderhandler.GetLog()
 	elev := log[localIndex]
+	elevio.SetDoorOpenLamp(false)
 	elevio.SetMotorDirection(elevio.MD_Down)
 
 	floor := <-drv_floors
@@ -145,8 +146,11 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 
 		case <-startUp: //Detects if main recieves new log from Network
 			log := orderhandler.GetLog()
+			dead := orderhandler.DetectDead(log)
 
-			deadElev <- orderhandler.DetectDead(log)
+			if dead != -1 {
+				log = orderhandler.ReAssignOrders(log, dead)
+			}
 
 			println(log[LogIndex].Floor)
 			if orderhandler.OrdersOnFloor(log[LogIndex].Floor, log[LogIndex]) {
@@ -166,8 +170,8 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				}
 				elevio.SetMotorDirection(dir)
 			}
-
 			newLogChan <- log
+			println("Fetched log from network")
 
 		case order := <-drv_buttons:
 			//watchdog.Reset(ElevTimeout * time.Second)
@@ -234,6 +238,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 				motorTimer.Reset(ElevTimeout * time.Second)
 			} else {
 				log[LogIndex].State = DEAD
+
 				println("Motor Failure")
 			}
 
