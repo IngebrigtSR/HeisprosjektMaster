@@ -134,6 +134,7 @@ func main() {
 				if newElevIndex != -1 {
 					fmt.Println("Log index for the new elevator:", newElevIndex)
 					newLog[newElevIndex].Online = true
+					newLog = orderhandler.UpdateOnlineElevOrders(newLog)
 					orderhandler.SetLog(newLog)
 				} else {
 					fmt.Println("Did not find the new elevator in the log")
