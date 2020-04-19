@@ -71,8 +71,9 @@ func main() {
 
 	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSMChan, deadElev)
 
-	transmitter := time.NewTicker(10 * time.Millisecond)
+	transmitter := time.NewTicker(100 * time.Millisecond)
 	transmit := false
+	fsmWatchdog := time.NewTimer(ElevTimeout * time.Second)
 	println("Initialization completed")
 	for {
 		select {
@@ -92,6 +93,7 @@ func main() {
 
 		case <-transmitter.C:
 			if transmit {
+				println("Broadcasting log")
 				logTx <- newLog
 				println("Broadcasted log")
 				transmit = false
@@ -112,7 +114,7 @@ func main() {
 						orderhandler.SetLog(newLog)
 						transmit = true
 					} else {
-						fmt.Println("Did not find the lost elevator in the log")
+						fmt.Println("\n Did not find the lost elevator in the log")
 					}
 				}
 				// Ta over ordrene fra alle heisene som har forsvunnet fra nettverket, og ikke assign nye ordre til disse tapte heisene
@@ -132,17 +134,18 @@ func main() {
 				newID := p.New
 				newElevIndex := networkmanager.GetLogIndex(newLog, newID)
 				if newElevIndex != -1 {
-					fmt.Println("Log index for the new elevator:", newElevIndex)
+					fmt.Println("\n Log index for the new elevator:", newElevIndex)
 					newLog[newElevIndex].Online = true
 					orderhandler.SetLog(newLog)
 				} else {
-					fmt.Println("Did not find the new elevator in the log")
+					fmt.Println("\n Did not find the new elevator in the log")
 				}
 				transmit = true
 
 			}
 
 		case newLog = <-logFromFSMChan:
+			fsmWatchdog.Reset(ElevTimeout * time.Second)
 
 			if newLog != orderhandler.GetLog() {
 				transmit = true
@@ -151,14 +154,11 @@ func main() {
 			fsm.UpdateButtonLights(newLog)
 			orderhandler.SetLog(newLog)
 
-		case dead := <-deadElev:
-			if dead != -1 {
-				newLog = orderhandler.GetLog()
-				newLog = orderhandler.ReAssignOrders(newLog, dead)
-				if newLog != orderhandler.GetLog() {
-					transmit = true
-				}
-			}
+		case <-fsmWatchdog.C:
+			log := orderhandler.GetLog()
+			log[LogIndex].State = DEAD
+			println("FSM has crashed")
+			transmit = true
 		}
 	}
 }
