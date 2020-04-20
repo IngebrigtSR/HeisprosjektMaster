@@ -63,8 +63,6 @@ func main() {
 		select {
 		case newLog = <-logRx:
 
-			// newLog, transmit = logmanager.AcceptOrders(newLog)
-			// logmanager.SetLog(newLog)
 			newLog, transmit = logmanager.UpdateLog(newLog)
 
 			fsm.UpdateButtonLights(newLog)
