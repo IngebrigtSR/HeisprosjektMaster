@@ -16,7 +16,7 @@ Inneholder alt av funksjonalitet for å håndtere fordeling av ordre til de fors
 
 ### FSM
 
-Håndterer logikken for å kunne kjøre heisen og reagere på hendelser på hardware. Det er her programmet reagerer på knappetrykk og etasjesensorer, samt oppdatere og sette diverse knappelys og motorretning på heisen avhengig av ordre det har liggende i logen. 
+Håndterer logikken for å kunne kjøre heisen og reagere på hendelser på hardware. Det er her programmet reagerer på knappetrykk og etasjesensorer, samt oppdatere og sette diverse knappelys og motorretning på heisen avhengig av ordre det har liggende i loggen. 
 
 ### Config
 
