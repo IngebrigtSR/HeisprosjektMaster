@@ -7,9 +7,10 @@ import (
 	. "../config"
 	"../elevio"
 	"../orderhandler"
+	"../logmanager"
 )
 
-func printOrder(elev orderhandler.Elevator) {
+func printOrder(elev logmanager.Elevator) {
 	fmt.Printf("Active Orders: \n")
 	for f := 0; f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
@@ -24,7 +25,7 @@ func printOrder(elev orderhandler.Elevator) {
 	}
 }
 
-func shouldStop(elev orderhandler.Elevator, floor int) bool {
+func shouldStop(elev logmanager.Elevator, floor int) bool {
 	if elev.Floor == 0 || elev.Floor == NumFloors-1 {
 		return true
 	}
@@ -39,7 +40,7 @@ func shouldStop(elev orderhandler.Elevator, floor int) bool {
 	return false
 }
 
-func anyActiveOrders(elev orderhandler.Elevator) bool {
+func anyActiveOrders(elev logmanager.Elevator) bool {
 	for f := 0; f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
 			if elev.Orders[f][b] == Accepted {
@@ -50,7 +51,7 @@ func anyActiveOrders(elev orderhandler.Elevator) bool {
 	return false
 }
 
-func getDir(elev orderhandler.Elevator) elevio.MotorDirection {
+func getDir(elev logmanager.Elevator) elevio.MotorDirection {
 	if !anyActiveOrders(elev) {
 		return elevio.MD_Stop
 	}
@@ -77,7 +78,7 @@ func getDir(elev orderhandler.Elevator) elevio.MotorDirection {
 }
 
 //UpdateButtonLights sets all Elevator button lights on/off depending on accepted orders
-func UpdateButtonLights(log orderhandler.ElevLog) {
+func UpdateButtonLights(log logmanager.ElevLog) {
 
 	var lights [NumFloors][NumButtons]bool
 
@@ -112,8 +113,8 @@ func UpdateButtonLights(log orderhandler.ElevLog) {
 }
 
 //InitFSM initializes the FSM
-func InitFSM(drv_floors chan int, localIndex int, newLogChan chan orderhandler.ElevLog) {
-	log := orderhandler.GetLog()
+func InitFSM(drv_floors chan int, localIndex int, newLogChan chan logmanager.ElevLog) {
+	log := logmanager.GetLog()
 	elev := log[localIndex]
 	elevio.SetDoorOpenLamp(false)
 	elevio.SetMotorDirection(elevio.MD_Down)
@@ -127,11 +128,11 @@ func InitFSM(drv_floors chan int, localIndex int, newLogChan chan orderhandler.E
 	elev.Floor = floor
 
 	log[localIndex] = elev
-	orderhandler.SetLog(log)
+	logmanager.SetLog(log)
 }
 
 //ElevFSM handles logic used to execute standing orders and run the elevator
-func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool, newLogChan chan orderhandler.ElevLog, deadElev chan int) {
+func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool, newLogChan chan logmanager.ElevLog, deadElev chan int) {
 
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
@@ -145,8 +146,8 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 		select {
 
 		case <-startUp: //Detects if main recieves new log from Network
-			log := orderhandler.GetLog()
-			dead := orderhandler.DetectDead(log)
+			log := logmanager.GetLog()
+			dead := logmanager.DetectDead(log)
 
 			if dead != -1 {
 				log = orderhandler.ReAssignOrders(log, dead)
@@ -176,7 +177,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 
 		case order := <-drv_buttons:
 			//watchdog.Reset(ElevTimeout * time.Second)
-			log := orderhandler.GetLog()
+			log := logmanager.GetLog()
 			fmt.Printf("Order:\t%+v\n", order)
 
 			log = orderhandler.DistributeOrder(order, log)
@@ -202,7 +203,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			fmt.Printf("Floor:\t%+v\n", floor)
 			elevio.SetFloorIndicator(floor)
 
-			log := orderhandler.GetLog()
+			log := logmanager.GetLog()
 			log[LogIndex].Floor = floor
 
 			if shouldStop(log[LogIndex], floor) {
@@ -218,7 +219,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			newLogChan <- log
 
 		case <-doorTimer.C:
-			log := orderhandler.GetLog()
+			log := logmanager.GetLog()
 			dir := getDir(log[LogIndex])
 
 			elevio.SetDoorOpenLamp(false)
@@ -236,7 +237,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			newLogChan <- log
 
 		case <-motorTimer.C:
-			log := orderhandler.GetLog()
+			log := logmanager.GetLog()
 			if log[LogIndex].State == IDLE || log[LogIndex].State == DOOROPEN {
 				motorTimer.Reset(ElevTimeout * time.Second)
 			} else {
@@ -248,10 +249,10 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 			newLogChan <- log
 
 		case <-drv_obstr:
-			orderhandler.PrintOrders(LogIndex, orderhandler.GetLog())
+			orderhandler.PrintOrders(LogIndex, logmanager.GetLog())
 
 		case <-drv_stop:
-			orderhandler.PrintElev(orderhandler.GetLog()[LogIndex])
+			orderhandler.PrintElev(logmanager.GetLog()[LogIndex])
 		}
 	}
 }

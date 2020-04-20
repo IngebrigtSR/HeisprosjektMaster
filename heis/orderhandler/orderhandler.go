@@ -3,64 +3,14 @@ package orderhandler
 import (
 	"fmt"
 	"math"
-	"time"
-
 	. "../config"
 	"../elevio"
-	"../network/peers"
+	"../logmanager"
 )
 
-//Elevator struct
-type Elevator struct {
-	Id     string
-	Dir    elevio.MotorDirection
-	Floor  int
-	State  State
-	Orders [NumFloors][NumButtons]OrderStatus
-	Online bool
-}
-
-//ElevLog array of all system elevators
-type ElevLog [NumElevators]Elevator
-
-var localLog ElevLog
-
-
-func InitLog(peerUpdateCh chan peers.PeerUpdate, logRx chan ElevLog) ElevLog {
-	timer := time.NewTimer(5 * time.Second)
-	peerInitDone := false
-	var p peers.PeerUpdate
-	for !peerInitDone {
-		select {
-		case p = <-peerUpdateCh:
-		case <-timer.C:
-			peerInitDone = true
-		}
-	}
-	var newLog ElevLog
-	if len(p.Peers) == 1 {
-		newLog = MakeEmptyLog()
-		fmt.Println("No other peers on network. Created a new empty log")
-	} else {
-		fmt.Println("Waiting on log from other peer(s)")
-		newLog = <-logRx
-		fmt.Println("Found other peer(s) on the network! Copied the already existing log")
-	}
-	return newLog
-}
-
-//GetLog returns the current locally stored log
-func GetLog() ElevLog {
-	return localLog
-}
-
-//SetLog updates locally stored log with newLog
-func SetLog(newLog ElevLog) {
-	localLog = newLog
-}
 
 //ordersAbove checks if there are any orders above the elevators current position
-func ordersAbove(elev Elevator) bool {
+func ordersAbove(elev logmanager.Elevator) bool {
 	for f := elev.Floor + 1; 0 <= f && f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
 			if elev.Orders[f][b] == Accepted {
@@ -72,7 +22,7 @@ func ordersAbove(elev Elevator) bool {
 }
 
 //ordersBelow checks if there are any accepted orders below the elevator's current position
-func ordersBelow(elev Elevator) bool {
+func ordersBelow(elev logmanager.Elevator) bool {
 	for f := elev.Floor - 1; 0 <= f && f < NumFloors; f-- {
 		for b := 0; b < NumButtons; b++ {
 			if elev.Orders[f][b] == Accepted {
@@ -84,7 +34,7 @@ func ordersBelow(elev Elevator) bool {
 }
 
 //OrdersInFront checks for any accepted orders in the direction of travel for a given elevator
-func OrdersInFront(elev Elevator) bool {
+func OrdersInFront(elev logmanager.Elevator) bool {
 	switch dir := elev.Dir; dir {
 	case elevio.MD_Stop:
 		return false
@@ -97,7 +47,7 @@ func OrdersInFront(elev Elevator) bool {
 }
 
 //OrdersOnFloor checks if an elevator has any accepted orders on a given floor
-func OrdersOnFloor(floor int, elev Elevator) bool {
+func OrdersOnFloor(floor int, elev logmanager.Elevator) bool {
 
 	cabOrder := (elev.Orders[floor][int(elevio.BT_Cab)] == Accepted)
 
@@ -119,7 +69,7 @@ func OrdersOnFloor(floor int, elev Elevator) bool {
 }
 
 //Cost function calulates how "expensive" it is for an elevator to execute a given order
-func getCost(order elevio.ButtonEvent, elevator Elevator) int {
+func getCost(order elevio.ButtonEvent, elevator logmanager.Elevator) int {
 
 	elev := elevator //copy of elevator to simulate movement
 	cost := 0        //Init value for cost
@@ -161,7 +111,7 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 }
 
 //getCheapestElev returns the most closest/cheapest elevator to be assigned a given order
-func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
+func getCheapestElev(order elevio.ButtonEvent, log logmanager.ElevLog) int {
 	cheapestElev := -1
 	cheapestCost := 10000
 
@@ -177,7 +127,7 @@ func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 }
 
 //DistributeOrder assigns a given order to the closest/cheapest elevator
-func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
+func DistributeOrder(order elevio.ButtonEvent, log logmanager.ElevLog) logmanager.ElevLog {
 
 	if order.Button == elevio.BT_Cab {
 		log[LogIndex].Orders[order.Floor][2] = Accepted
@@ -195,7 +145,7 @@ func DistributeOrder(order elevio.ButtonEvent, log ElevLog) ElevLog {
 }
 
 //ReAssignOrders reassigns hall orders from a Dead elevator to the others
-func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
+func ReAssignOrders(log logmanager.ElevLog, deadElev int) logmanager.ElevLog {
 	if log[deadElev].State == DEAD || !log[deadElev].Online {
 		for f := 0; f < NumFloors; f++ {
 			//b < NumButtons-1 to prevent reassigning cabOrders
@@ -216,7 +166,7 @@ func ReAssignOrders(log ElevLog, deadElev int) ElevLog {
 }
 
 //AcceptOrders accepts orders assigned by external elevators (returns true if any are accpted)
-func AcceptOrders(log ElevLog) (ElevLog, bool) {
+func AcceptOrders(log logmanager.ElevLog) (logmanager.ElevLog, bool) {
 	accepted := false
 	for f := 0; f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
@@ -230,7 +180,7 @@ func AcceptOrders(log ElevLog) (ElevLog, bool) {
 }
 
 //ClearOrdersFloor clears orders on a given floor with regards to direction of travel
-func ClearOrdersFloor(floor int, elevID int, log ElevLog) ElevLog {
+func ClearOrdersFloor(floor int, elevID int, log logmanager.ElevLog) logmanager.ElevLog {
 	elev := log[elevID]
 
 	//clear cab order
@@ -252,52 +202,11 @@ func ClearOrdersFloor(floor int, elevID int, log ElevLog) ElevLog {
 	return log
 }
 
-//DetectDead checks a log for any dead elevators and returns the dead index
-func DetectDead(log ElevLog) int {
-	for i := 0; i < NumElevators; i++ {
-		if log[i].State == DEAD {
-			return i
-		}
-	}
-	return -1
-}
 
-//UpdateOnlineElevators checks if new elevators has come online and updates the log with them
-func UpdateOnlineElevators(newLog ElevLog) ElevLog {
-	log := GetLog()
 
-	for elev := 0; elev < NumElevators; elev++ {
-		if newLog[elev].Online && !log[elev].Online {
-			log[elev] = newLog[elev]
-		}
-	}
-	return log
-
-}
-
-//MakeEmptyLog creates an empty ElevLog
-func MakeEmptyLog() ElevLog {
-	var log [NumElevators]Elevator
-
-	for elev := 0; elev < NumElevators; elev++ {
-		log[elev].Dir = elevio.MD_Stop
-		log[elev].Floor = -1
-		log[elev].State = DEAD
-		log[elev].Id = ""
-		log[elev].Online = false
-
-		for i := 0; i < NumFloors; i++ {
-			for j := 0; j < NumButtons; j++ {
-				log[elev].Orders[i][j] = Unassigned
-			}
-		}
-
-	}
-	return log
-}
 
 //PrintOrders prints the Orders array ofa given eleveator
-func PrintOrders(elevIndex int, log ElevLog) {
+func PrintOrders(elevIndex int, log logmanager.ElevLog) {
 	for i := 0; i < NumButtons; i++ {
 		for j := 0; j < NumFloors; j++ {
 			fmt.Print(int(log[elevIndex].Orders[j][i]), "\t")
@@ -308,7 +217,7 @@ func PrintOrders(elevIndex int, log ElevLog) {
 }
 
 //PrintElev prints a given elevators attributes/states
-func PrintElev(elev Elevator) {
+func PrintElev(elev logmanager.Elevator) {
 	println("Elevator:\t", elev.Id)
 	println("Direction: \t", elev.Dir)
 	println("State: \t", elev.State)

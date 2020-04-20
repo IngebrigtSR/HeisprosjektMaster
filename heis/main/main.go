@@ -8,7 +8,7 @@ import (
 	"../elevio"
 	"../fsm"
 	"../network/bcast"
-	"../network/networkmanager"
+	"../logmanager"
 	"../network/peers"
 	"../orderhandler"
 )
@@ -19,8 +19,8 @@ func main() {
 	elevio.Init("localhost:15657", NumFloors)
 
 	//Network & Peers
-	logTx := make(chan orderhandler.ElevLog)
-	logRx := make(chan orderhandler.ElevLog)
+	logTx := make(chan logmanager.ElevLog)
+	logRx := make(chan logmanager.ElevLog)
 	go bcast.Transmitter(BcastPort, logTx)
 	go bcast.Receiver(BcastPort, logRx)
 
@@ -33,25 +33,25 @@ func main() {
 	go peers.Receiver(PeerPort, peerUpdateCh)
 
 	//Init log
-	newLog := orderhandler.InitLog(peerUpdateCh, logRx)
-	networkmanager.InitNewElevator(&newLog, id)
+	newLog := logmanager.InitLog(peerUpdateCh, logRx)
+	logmanager.InitNewElevator(&newLog, id)
 
-	LogIndex = networkmanager.GetLogIndex(newLog, id)
-	orderhandler.SetLog(newLog)
+	LogIndex = logmanager.GetLogIndex(newLog, id)
+	logmanager.SetLog(newLog)
 	println("Local index: \t ", LogIndex)
 
 	//FSM channels
 	drv_buttons := make(chan elevio.ButtonEvent)
 	drv_floors := make(chan int)
 	startUp := make(chan bool)
-	logFromFSMChan := make(chan orderhandler.ElevLog)
+	logFromFSMChan := make(chan logmanager.ElevLog)
 	deadElev := make(chan int)
 
 	go elevio.PollButtons(drv_buttons)
 	go elevio.PollFloorSensor(drv_floors)
 
 	fsm.InitFSM(drv_floors, LogIndex, logFromFSMChan)
-	logTx <- orderhandler.GetLog()
+	logTx <- logmanager.GetLog()
 	time.Sleep(1 * time.Second)
 
 	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSMChan, deadElev)
@@ -67,7 +67,7 @@ func main() {
 		case newLog = <-logRx:
 
 			newLog, accepted := orderhandler.AcceptOrders(newLog)
-			orderhandler.SetLog(newLog)
+			logmanager.SetLog(newLog)
 			if accepted {
 				transmit = true
 			}
@@ -92,12 +92,12 @@ func main() {
 				for i := 0; i < len(p.Lost); i++ {
 					fmt.Print("\t", p.Lost[i])
 					lostID := p.Lost[i]
-					lostElevIndex := networkmanager.GetLogIndex(newLog, lostID)
+					lostElevIndex := logmanager.GetLogIndex(newLog, lostID)
 					if lostElevIndex != -1 && lostElevIndex != LogIndex {
 						fmt.Println("\nLog index for the lost elevator:", lostElevIndex)
 						newLog[lostElevIndex].Online = false
 						newLog = orderhandler.ReAssignOrders(newLog, lostElevIndex)
-						orderhandler.SetLog(newLog)
+						logmanager.SetLog(newLog)
 						transmit = true
 					} else {
 						fmt.Println("\n Did not find the lost elevator in the log")
@@ -118,12 +118,12 @@ func main() {
 				fmt.Print("\n NEW:", p.New)
 
 				newID := p.New
-				newElevIndex := networkmanager.GetLogIndex(newLog, newID)
+				newElevIndex := logmanager.GetLogIndex(newLog, newID)
 				if newElevIndex != -1 {
 					fmt.Println("\n Log index for the new elevator:", newElevIndex)
 					newLog[newElevIndex].Online = true
-					newLog = orderhandler.UpdateOnlineElevators(newLog)
-					orderhandler.SetLog(newLog)
+					newLog = logmanager.UpdateOnlineElevators(newLog)
+					logmanager.SetLog(newLog)
 				} else {
 					fmt.Println("\n Did not find the new elevator in the log")
 				}
@@ -134,15 +134,15 @@ func main() {
 		case newLog = <-logFromFSMChan:
 			fsmWatchdog.Reset(ElevTimeout * time.Second)
 
-			if newLog != orderhandler.GetLog() {
+			if newLog != logmanager.GetLog() {
 				transmit = true
 			}
 
 			fsm.UpdateButtonLights(newLog)
-			orderhandler.SetLog(newLog)
+			logmanager.SetLog(newLog)
 
 		case <-fsmWatchdog.C:
-			log := orderhandler.GetLog()
+			log := logmanager.GetLog()
 			//If all Elevators are IDLE timer will never be reset
 			if log[LogIndex].State != IDLE {
 				log[LogIndex].State = DEAD
