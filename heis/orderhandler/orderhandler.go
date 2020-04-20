@@ -8,9 +8,63 @@ import (
 	"../logmanager"
 )
 
+<<<<<<< HEAD
 
 //ordersAbove checks if there are any orders above the elevators current position
 func ordersAbove(elev logmanager.Elevator) bool {
+=======
+//Elevator struct
+type Elevator struct {
+	Id     string
+	Dir    elevio.MotorDirection
+	Floor  int
+	State  State
+	Orders [NumFloors][NumButtons]OrderStatus
+	Online bool
+}
+
+//ElevLog array of all system elevators
+type ElevLog [NumElevators]Elevator
+
+var localLog ElevLog
+
+//InitLog initalizes the log by using the network package peers to check if there is an already exusting log on th network
+func InitLog(peerUpdateCh chan peers.PeerUpdate, logRx chan ElevLog) ElevLog {
+	timer := time.NewTimer(5 * time.Second)
+	peerInitDone := false
+	var p peers.PeerUpdate
+	for !peerInitDone {
+		select {
+		case p = <-peerUpdateCh:
+		case <-timer.C:
+			peerInitDone = true
+		}
+	}
+	var newLog ElevLog
+	if len(p.Peers) == 1 {
+		newLog = MakeEmptyLog()
+		fmt.Println("No other peers on network. Created a new empty log")
+	} else {
+		fmt.Println("Waiting on log from other peer(s)")
+		newLog = <-logRx
+		fmt.Println("Found other peer(s) on the network! Copied the already existing log")
+	}
+	return newLog
+}
+
+//GetLog returns the current locally stored log
+func GetLog() ElevLog {
+	return localLog
+}
+
+//SetLog updates locally stored log with newLog
+func SetLog(newLog ElevLog) {
+	localLog = newLog
+}
+
+//ordersAbove checks if there are any orders above the elevator's current position
+func ordersAbove(elev Elevator) bool {
+>>>>>>> e1f980cd6d27456bc2cac687e094a7afcc095e28
 	for f := elev.Floor + 1; 0 <= f && f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
 			if elev.Orders[f][b] == Accepted {
@@ -46,8 +100,13 @@ func OrdersInFront(elev logmanager.Elevator) bool {
 	return false
 }
 
+<<<<<<< HEAD
 //OrdersOnFloor checks if an elevator has any accepted orders on a given floor
 func OrdersOnFloor(floor int, elev logmanager.Elevator) bool {
+=======
+//OrdersOnFloor checks if an elevator has any accepted orders on a given floor in the direction of travel
+func OrdersOnFloor(floor int, elev Elevator) bool {
+>>>>>>> e1f980cd6d27456bc2cac687e094a7afcc095e28
 
 	cabOrder := (elev.Orders[floor][int(elevio.BT_Cab)] == Accepted)
 
@@ -68,8 +127,13 @@ func OrdersOnFloor(floor int, elev logmanager.Elevator) bool {
 	return false
 }
 
+<<<<<<< HEAD
 //Cost function calulates how "expensive" it is for an elevator to execute a given order
 func getCost(order elevio.ButtonEvent, elevator logmanager.Elevator) int {
+=======
+//getCost calulates how "expensive" it is for an elevator to execute a given order by simulating future movement of the elevator
+func getCost(order elevio.ButtonEvent, elevator Elevator) int {
+>>>>>>> e1f980cd6d27456bc2cac687e094a7afcc095e28
 
 	elev := elevator //copy of elevator to simulate movement
 	cost := 0        //Init value for cost
@@ -110,8 +174,13 @@ func getCost(order elevio.ButtonEvent, elevator logmanager.Elevator) int {
 	return cost
 }
 
+<<<<<<< HEAD
 //getCheapestElev returns the most closest/cheapest elevator to be assigned a given order
 func getCheapestElev(order elevio.ButtonEvent, log logmanager.ElevLog) int {
+=======
+//getCheapestElev returns the closest/cheapest elevator to be assigned a given order
+func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
+>>>>>>> e1f980cd6d27456bc2cac687e094a7afcc095e28
 	cheapestElev := -1
 	cheapestCost := 10000
 

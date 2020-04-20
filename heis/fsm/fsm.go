@@ -10,6 +10,7 @@ import (
 	"../logmanager"
 )
 
+<<<<<<< HEAD
 func printOrder(elev logmanager.Elevator) {
 	fmt.Printf("Active Orders: \n")
 	for f := 0; f < NumFloors; f++ {
@@ -26,6 +27,9 @@ func printOrder(elev logmanager.Elevator) {
 }
 
 func shouldStop(elev logmanager.Elevator, floor int) bool {
+=======
+func shouldStop(elev orderhandler.Elevator, floor int) bool {
+>>>>>>> e1f980cd6d27456bc2cac687e094a7afcc095e28
 	if elev.Floor == 0 || elev.Floor == NumFloors-1 {
 		return true
 	}
@@ -70,6 +74,7 @@ func getDir(elev logmanager.Elevator) elevio.MotorDirection {
 			}
 		}
 	}
+
 	if orderhandler.OrdersInFront(elev) {
 		return elevio.MotorDirection(elev.Dir)
 	}
@@ -131,8 +136,13 @@ func InitFSM(drv_floors chan int, localIndex int, newLogChan chan logmanager.Ele
 	logmanager.SetLog(log)
 }
 
+<<<<<<< HEAD
 //ElevFSM handles logic used to execute standing orders and run the elevator
 func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool, newLogChan chan logmanager.ElevLog, deadElev chan int) {
+=======
+//ElevFSM handles logic used run the elevator and handle events like buttonpresses and floorpassing
+func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool, newLogChan chan orderhandler.ElevLog, deadElev chan int) {
+>>>>>>> e1f980cd6d27456bc2cac687e094a7afcc095e28
 
 	drv_obstr := make(chan bool)
 	drv_stop := make(chan bool)
@@ -140,7 +150,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 	go elevio.PollStopButton(drv_stop)
 
 	motorTimer := time.NewTimer(ElevTimeout * time.Second) //Timer to check for motor malfunction
-	doorTimer := time.NewTimer(DoorOpenTime * time.Second) //Timer for closing door after opening
+	doorTimer := time.NewTimer(DoorOpenTime * time.Second) //Timer for closing the door after opening
 	doorTimer.Stop()
 	for {
 		select {

@@ -15,8 +15,8 @@ import (
 
 func main() {
 	fmt.Println("Hello World")
-
 	elevio.Init("localhost:15657", NumFloors)
+	id := "Heis numero 1"
 
 	//Network & Peers
 	logTx := make(chan logmanager.ElevLog)
@@ -25,8 +25,6 @@ func main() {
 	go bcast.Receiver(BcastPort, logRx)
 
 	var p peers.PeerUpdate
-	id := "Heis numero 1"
-
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	go peers.Transmitter(PeerPort, id, peerTxEnable)
