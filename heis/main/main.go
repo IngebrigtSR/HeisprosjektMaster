@@ -58,17 +58,16 @@ func main() {
 	transmit := false
 	fsmWatchdog := time.NewTimer(ElevTimeout * time.Second)
 	println("Initialization completed")
+	
 
 	for {
 		select {
-
 		case newLog = <-logRx:
 
-			newLog, accepted := orderhandler.AcceptOrders(newLog)
-			logmanager.SetLog(newLog)
-			if accepted {
-				transmit = true
-			}
+			// newLog, transmit = logmanager.AcceptOrders(newLog)
+			// logmanager.SetLog(newLog)
+			newLog, transmit = logmanager.UpdateLog(newLog)
+		
 
 			fsm.UpdateButtonLights(newLog)
 
@@ -78,7 +77,7 @@ func main() {
 		case <-transmitter.C:
 			if transmit {
 				println("Broadcasting log")
-				logTx <- newLog
+				logTx <- logmanager.GetLog()
 				println("Broadcasted log")
 				transmit = false
 			}

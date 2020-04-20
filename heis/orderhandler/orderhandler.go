@@ -165,20 +165,6 @@ func ReAssignOrders(log logmanager.ElevLog, deadElev int) logmanager.ElevLog {
 	return log
 }
 
-//AcceptOrders accepts orders assigned by external elevators (returns true if any are accpted)
-func AcceptOrders(log logmanager.ElevLog) (logmanager.ElevLog, bool) {
-	accepted := false
-	for f := 0; f < NumFloors; f++ {
-		for b := 0; b < NumButtons; b++ {
-			if log[LogIndex].Orders[f][b] == Assigned {
-				log[LogIndex].Orders[f][b] = Accepted
-				accepted = true
-			}
-		}
-	}
-	return log, accepted
-}
-
 //ClearOrdersFloor clears orders on a given floor with regards to direction of travel
 func ClearOrdersFloor(floor int, elevID int, log logmanager.ElevLog) logmanager.ElevLog {
 	elev := log[elevID]

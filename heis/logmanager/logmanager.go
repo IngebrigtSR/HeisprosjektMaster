@@ -124,3 +124,36 @@ func UpdateOnlineElevators(newLog ElevLog) ElevLog {
 	}
 	return log
 }
+
+//AcceptOrders accepts orders assigned by external elevators (returns true if any are accpted)
+func AcceptOrders(log ElevLog) (ElevLog, bool) {
+	accepted := false
+	for f := 0; f < NumFloors; f++ {
+		for b := 0; b < NumButtons; b++ {
+			if log[LogIndex].Orders[f][b] == Assigned {
+				log[LogIndex].Orders[f][b] = Accepted
+				accepted = true
+			}
+		}
+	}
+	return log, accepted
+}
+
+func UpdateLog(newLog ElevLog) (ElevLog, bool) {
+	log := GetLog()
+	newLog, changed := AcceptOrders(newLog)
+	
+	for i := 0; i < NumElevators; i++ {
+		if i == LogIndex {
+			log[i].Orders = newLog[i].Orders
+		} else {
+			log[i] = newLog[i]
+		}
+	}
+	if GetLog() != log {
+		changed = true
+	}
+	SetLog(log)
+	
+	return log, changed
+}
