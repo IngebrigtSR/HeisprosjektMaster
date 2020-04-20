@@ -9,21 +9,6 @@ import (
 	"../orderhandler"
 )
 
-func printOrder(elev orderhandler.Elevator) {
-	fmt.Printf("Active Orders: \n")
-	for f := 0; f < NumFloors; f++ {
-		for b := 0; b < NumButtons; b++ {
-			if elev.Orders[f][b] == 2 {
-				fmt.Printf("%d\t", 1)
-
-			} else {
-				fmt.Printf("%d\t", 0)
-			}
-		}
-		fmt.Printf("\n")
-	}
-}
-
 func shouldStop(elev orderhandler.Elevator, floor int) bool {
 	if elev.Floor == 0 || elev.Floor == NumFloors-1 {
 		return true
@@ -69,6 +54,7 @@ func getDir(elev orderhandler.Elevator) elevio.MotorDirection {
 			}
 		}
 	}
+
 	if orderhandler.OrdersInFront(elev) {
 		return elevio.MotorDirection(elev.Dir)
 	}
@@ -130,7 +116,7 @@ func InitFSM(drv_floors chan int, localIndex int, newLogChan chan orderhandler.E
 	orderhandler.SetLog(log)
 }
 
-//ElevFSM handles logic used to execute standing orders and run the elevator
+//ElevFSM handles logic used run the elevator and handle events like buttonpresses and floorpassing
 func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp chan bool, newLogChan chan orderhandler.ElevLog, deadElev chan int) {
 
 	drv_obstr := make(chan bool)
@@ -139,7 +125,7 @@ func ElevFSM(drv_buttons chan elevio.ButtonEvent, drv_floors chan int, startUp c
 	go elevio.PollStopButton(drv_stop)
 
 	motorTimer := time.NewTimer(ElevTimeout * time.Second) //Timer to check for motor malfunction
-	doorTimer := time.NewTimer(DoorOpenTime * time.Second) //Timer for closing door after opening
+	doorTimer := time.NewTimer(DoorOpenTime * time.Second) //Timer for closing the door after opening
 	doorTimer.Stop()
 	for {
 		select {

@@ -25,7 +25,7 @@ type ElevLog [NumElevators]Elevator
 
 var localLog ElevLog
 
-
+//InitLog initalizes the log by using the network package peers to check if there is an already exusting log on th network
 func InitLog(peerUpdateCh chan peers.PeerUpdate, logRx chan ElevLog) ElevLog {
 	timer := time.NewTimer(5 * time.Second)
 	peerInitDone := false
@@ -59,7 +59,7 @@ func SetLog(newLog ElevLog) {
 	localLog = newLog
 }
 
-//ordersAbove checks if there are any orders above the elevators current position
+//ordersAbove checks if there are any orders above the elevator's current position
 func ordersAbove(elev Elevator) bool {
 	for f := elev.Floor + 1; 0 <= f && f < NumFloors; f++ {
 		for b := 0; b < NumButtons; b++ {
@@ -96,7 +96,7 @@ func OrdersInFront(elev Elevator) bool {
 	return false
 }
 
-//OrdersOnFloor checks if an elevator has any accepted orders on a given floor
+//OrdersOnFloor checks if an elevator has any accepted orders on a given floor in the direction of travel
 func OrdersOnFloor(floor int, elev Elevator) bool {
 
 	cabOrder := (elev.Orders[floor][int(elevio.BT_Cab)] == Accepted)
@@ -118,7 +118,7 @@ func OrdersOnFloor(floor int, elev Elevator) bool {
 	return false
 }
 
-//Cost function calulates how "expensive" it is for an elevator to execute a given order
+//getCost calulates how "expensive" it is for an elevator to execute a given order by simulating future movement of the elevator
 func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 
 	elev := elevator //copy of elevator to simulate movement
@@ -160,7 +160,7 @@ func getCost(order elevio.ButtonEvent, elevator Elevator) int {
 	return cost
 }
 
-//getCheapestElev returns the most closest/cheapest elevator to be assigned a given order
+//getCheapestElev returns the closest/cheapest elevator to be assigned a given order
 func getCheapestElev(order elevio.ButtonEvent, log ElevLog) int {
 	cheapestElev := -1
 	cheapestCost := 10000
