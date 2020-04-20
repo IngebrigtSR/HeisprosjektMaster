@@ -2,12 +2,12 @@ package logmanager
 
 import (
 	"fmt"
-	"../elevio"
-	. "../config"
-	"../network/peers"
 	"time"
-)
 
+	. "../config"
+	"../elevio"
+	"../network/peers"
+)
 
 //Elevator struct
 type Elevator struct {
@@ -99,7 +99,6 @@ func MakeEmptyLog() ElevLog {
 				log[elev].Orders[i][j] = Unassigned
 			}
 		}
-
 	}
 	return log
 }
