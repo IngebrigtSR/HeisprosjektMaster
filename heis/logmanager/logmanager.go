@@ -2,12 +2,12 @@ package logmanager
 
 import (
 	"fmt"
-	"../elevio"
-	. "../config"
-	"../network/peers"
 	"time"
-)
 
+	. "../config"
+	"../elevio"
+	"../network/peers"
+)
 
 //Elevator struct
 type Elevator struct {
@@ -99,7 +99,6 @@ func MakeEmptyLog() ElevLog {
 				log[elev].Orders[i][j] = Unassigned
 			}
 		}
-
 	}
 	return log
 }
@@ -124,6 +123,7 @@ func UpdateOnlineElevators(newLog ElevLog) ElevLog {
 	}
 	return log
 }
+<<<<<<< HEAD
 
 //AcceptOrders accepts orders assigned by external elevators (returns true if any are accpted)
 func AcceptOrders(log ElevLog) (ElevLog, bool) {
@@ -157,3 +157,5 @@ func UpdateLog(newLog ElevLog) (ElevLog, bool) {
 	
 	return log, changed
 }
+=======
+>>>>>>> ed25262eedcb7d0485677cddddce3e3206f4e108
