@@ -24,17 +24,19 @@ type ElevLog [NumElevators]Elevator
 
 var localLog ElevLog
 
-func InitLog(peerUpdateCh chan peers.PeerUpdate, logRx chan ElevLog) ElevLog {
+//InitLog initializes the log either recieved from potensial peers or make a new empty log
+func InitLog(peerUpdate chan peers.PeerUpdate, logRx chan ElevLog) ElevLog {
 	timer := time.NewTimer(5 * time.Second)
 	peerInitDone := false
 	var p peers.PeerUpdate
 	for !peerInitDone {
 		select {
-		case p = <-peerUpdateCh:
+		case p = <-peerUpdate:
 		case <-timer.C:
 			peerInitDone = true
 		}
 	}
+
 	var newLog ElevLog
 	if len(p.Peers) == 1 {
 		newLog = MakeEmptyLog()
@@ -47,7 +49,7 @@ func InitLog(peerUpdateCh chan peers.PeerUpdate, logRx chan ElevLog) ElevLog {
 	return newLog
 }
 
-//InitNewElevator initializes a new elevator on the network
+//InitNewElevator initializes a new elevator in the log
 func InitNewElevator(logPtr *ElevLog, id string) {
 	elev := Elevator{}
 	elev.Id = id
@@ -73,7 +75,7 @@ func SetLog(newLog ElevLog) {
 	localLog = newLog
 }
 
-//GetLogIndex returns the index of the elevator
+//GetLogIndex returns the log index of the local elevator
 func GetLogIndex(log ElevLog, id string) int {
 	for index := 0; index < len(log); index++ {
 		if log[index].Id == id {
@@ -124,7 +126,7 @@ func UpdateOnlineElevators(newLog ElevLog) ElevLog {
 	return log
 }
 
-//AcceptOrders accepts orders assigned by external elevators (returns true if any are accpted)
+//AcceptOrders accepts orders assigned by external elevators (returns true if any are accepted)
 func AcceptOrders(log ElevLog) (ElevLog, bool) {
 	accepted := false
 	for f := 0; f < NumFloors; f++ {
@@ -138,6 +140,7 @@ func AcceptOrders(log ElevLog) (ElevLog, bool) {
 	return log, accepted
 }
 
+//UpdateLog updates the local log when a new one is recieved from the network
 func UpdateLog(newLog ElevLog) (ElevLog, bool) {
 	log := GetLog()
 	newLog, changed := AcceptOrders(newLog)
@@ -149,9 +152,7 @@ func UpdateLog(newLog ElevLog) (ElevLog, bool) {
 			log[i] = newLog[i]
 		}
 	}
-	if GetLog() != log {
-		changed = true
-	}
+
 	SetLog(log)
 
 	return log, changed

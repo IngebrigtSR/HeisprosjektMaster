@@ -7,8 +7,8 @@ import (
 	. "../config"
 	"../elevio"
 	"../fsm"
-	"../network/bcast"
 	"../logmanager"
+	"../network/bcast"
 	"../network/peers"
 	"../orderhandler"
 )
@@ -25,13 +25,13 @@ func main() {
 	go bcast.Receiver(BcastPort, logRx)
 
 	var p peers.PeerUpdate
-	peerUpdateCh := make(chan peers.PeerUpdate)
+	peerUpdate := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	go peers.Transmitter(PeerPort, id, peerTxEnable)
-	go peers.Receiver(PeerPort, peerUpdateCh)
+	go peers.Receiver(PeerPort, peerUpdate)
 
 	//Init log
-	newLog := logmanager.InitLog(peerUpdateCh, logRx)
+	newLog := logmanager.InitLog(peerUpdate, logRx)
 	logmanager.InitNewElevator(&newLog, id)
 
 	LogIndex = logmanager.GetLogIndex(newLog, id)
@@ -39,26 +39,25 @@ func main() {
 	println("Local index: \t ", LogIndex)
 
 	//FSM channels
-	drv_buttons := make(chan elevio.ButtonEvent)
-	drv_floors := make(chan int)
-	startUp := make(chan bool)
-	logFromFSMChan := make(chan logmanager.ElevLog)
+	drvButtons := make(chan elevio.ButtonEvent)
+	drvFloors := make(chan int)
+	logRecieved := make(chan bool)
+	logFromFSM := make(chan logmanager.ElevLog)
 	deadElev := make(chan int)
 
-	go elevio.PollButtons(drv_buttons)
-	go elevio.PollFloorSensor(drv_floors)
+	go elevio.PollButtons(drvButtons)
+	go elevio.PollFloorSensor(drvFloors)
 
-	fsm.InitFSM(drv_floors, LogIndex, logFromFSMChan)
+	fsm.InitFSM(drvFloors, LogIndex, logFromFSM)
 	logTx <- logmanager.GetLog()
 	time.Sleep(1 * time.Second)
 
-	go fsm.ElevFSM(drv_buttons, drv_floors, startUp, logFromFSMChan, deadElev)
+	go fsm.ElevFSM(drvButtons, drvFloors, logRecieved, logFromFSM, deadElev)
 
 	transmitter := time.NewTicker(100 * time.Millisecond)
 	transmit := false
 	fsmWatchdog := time.NewTimer(ElevTimeout * time.Second)
 	println("Initialization completed")
-	
 
 	for {
 		select {
@@ -67,11 +66,10 @@ func main() {
 			// newLog, transmit = logmanager.AcceptOrders(newLog)
 			// logmanager.SetLog(newLog)
 			newLog, transmit = logmanager.UpdateLog(newLog)
-		
 
 			fsm.UpdateButtonLights(newLog)
 
-			startUp <- true
+			logRecieved <- true
 			println("Recieved new log")
 
 		case <-transmitter.C:
@@ -82,7 +80,7 @@ func main() {
 				transmit = false
 			}
 
-		case p = <-peerUpdateCh:
+		case p = <-peerUpdate:
 
 			if len(p.Lost) != 0 {
 				fmt.Print("\n LOST:\t")
@@ -128,7 +126,7 @@ func main() {
 
 			}
 
-		case newLog = <-logFromFSMChan:
+		case newLog = <-logFromFSM:
 			fsmWatchdog.Reset(ElevTimeout * time.Second)
 
 			if newLog != logmanager.GetLog() {

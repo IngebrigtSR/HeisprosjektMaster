@@ -7,11 +7,11 @@ Vårt system baserer seg på et peer to peer nettverk hvor alle heisene på nett
 
 ### Logmanager
 
-Modulen håndterer den lokalt lagrede loggen som skal sendes og mottas til og fra andre heiser. Loggen er en tabell der hvert element er en struct med all nødvendig informasjon for hver unike heis. Dermed kan hver enkelt heis fungere på egen hånd i henhold til kravsspesifikasjonen basert på informasjonen i loggen.
+Modulen håndterer den lokalt lagrede loggen som skal sendes og mottas til og fra andre heiser. Loggen er en tabell der hvert element er en struct med all nødvendig informasjon for hver unike heis. Dermed kan hver enkelt heis fungere på egen hånd i henhold til kravsspesifikasjonen basert på informasjonen i loggen. Her ligger også funksjon for å oppdatere loggen med tildelte ordre fra eksterne heiser.
 
 ### Orderhandler
 
-Inneholder alt av funksjonalitet for å håndtere fordeling av ordre til de forskjellige heisene samt funksjoner for å slette utførte ordre fra loggen og også godta ordre som er blitt tildelt fra andre heiser. Fordeling av ordrene baserer seg på en cost funksjon som rett og slett teller hvor mange etasjer heisen må passere eller stoppe i før den vil nå en gitt ordre, basert på denne kostnaden vil da den "billigste" heisen på system bli tildelt ordren.
+Inneholder alt av funksjonalitet for å håndtere fordeling av ordre til de forskjellige heisene samt funksjoner for å slette utførte ordre fra loggen.  Fordeling av ordrene baserer seg på en cost funksjon som rett og slett teller hvor mange etasjer heisen må passere eller stoppe i før den vil nå en gitt ordre, basert på denne kostnaden vil da den "billigste" heisen på system bli tildelt ordren.
 
 
 ### FSM

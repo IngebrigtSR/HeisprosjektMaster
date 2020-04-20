@@ -1,13 +1,12 @@
 package orderhandler
 
 import (
-	"fmt"
 	"math"
+
 	. "../config"
 	"../elevio"
 	"../logmanager"
 )
-
 
 //ordersAbove checks if there are any orders above the elevators current position
 func ordersAbove(elev logmanager.Elevator) bool {
@@ -51,7 +50,7 @@ func OrdersOnFloor(floor int, elev logmanager.Elevator) bool {
 
 	cabOrder := (elev.Orders[floor][int(elevio.BT_Cab)] == Accepted)
 
-	switch d := elev.Dir; d {
+	switch dir := elev.Dir; dir {
 	case elevio.MD_Down:
 		return elev.Orders[floor][int(elevio.BT_HallDown)] == Accepted || cabOrder
 
@@ -83,11 +82,14 @@ func getCost(order elevio.ButtonEvent, elevator logmanager.Elevator) int {
 		cost = int(math.Abs(float64(elev.Floor - order.Floor))) //#floors between new order and elevator
 	default:
 		for elev.Floor != order.Floor {
+			//Add proper cost
 			if OrdersOnFloor(elev.Floor, elev) {
 				cost += 2
 			} else {
 				cost++
 			}
+
+			//Update simulated movement direction
 			if !OrdersInFront(elev) {
 				if elev.Dir == elevio.MD_Down && elev.Floor < order.Floor {
 					elev.Dir = elevio.MotorDirection(-int(elev.Dir))
@@ -186,27 +188,4 @@ func ClearOrdersFloor(floor int, elevID int, log logmanager.ElevLog) logmanager.
 	}
 
 	return log
-}
-
-
-
-
-//PrintOrders prints the Orders array ofa given eleveator
-func PrintOrders(elevIndex int, log logmanager.ElevLog) {
-	for i := 0; i < NumButtons; i++ {
-		for j := 0; j < NumFloors; j++ {
-			fmt.Print(int(log[elevIndex].Orders[j][i]), "\t")
-		}
-		println()
-	}
-	println()
-}
-
-//PrintElev prints a given elevators attributes/states
-func PrintElev(elev logmanager.Elevator) {
-	println("Elevator:\t", elev.Id)
-	println("Direction: \t", elev.Dir)
-	println("State: \t", elev.State)
-	println("Floor: \t", elev.Floor)
-	println("Online: \t", elev.Online)
 }
